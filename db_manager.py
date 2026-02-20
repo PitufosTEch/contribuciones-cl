@@ -1,73 +1,162 @@
 """
-db_manager.py -- Base de datos SQLite para historial de contribuciones
-Ejecutar una vez para inicializar: python db_manager.py
+db_manager.py -- Base de datos para historial de contribuciones
+Soporta PostgreSQL (Railway/produccion) y SQLite (local)
 """
 import os
-import sqlite3
 import json
 from datetime import datetime
 from pathlib import Path
 
-# Si hay volumen Railway, usar ese path; sino usar local
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+if DATABASE_URL:
+    import psycopg2
+    import psycopg2.extras
+    _PG = True
+else:
+    import sqlite3
+    _PG = False
+
 DB_PATH = Path(os.environ.get("DATABASE_PATH", Path(__file__).parent / "contribuciones.db"))
 
 
-def get_conn():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+# -- Helpers -------------------------------------------------------------------
 
+def get_conn():
+    if _PG:
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    else:
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        return conn
+
+
+def _q(sql):
+    """Convierte ? a %s para PostgreSQL."""
+    if _PG:
+        return sql.replace("?", "%s")
+    return sql
+
+
+def _cur(conn):
+    """Cursor con filas tipo dict."""
+    if _PG:
+        return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    return conn.cursor()
+
+
+def _fetchall(conn, sql, params=()):
+    cur = _cur(conn)
+    cur.execute(_q(sql), params)
+    return [dict(r) for r in cur.fetchall()]
+
+
+def _fetchone(conn, sql, params=()):
+    cur = _cur(conn)
+    cur.execute(_q(sql), params)
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def _execute(conn, sql, params=()):
+    cur = _cur(conn)
+    cur.execute(_q(sql), params)
+    return cur
+
+
+# -- INIT ----------------------------------------------------------------------
 
 def init_db():
     """Crea las tablas si no existen."""
     conn = get_conn()
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS propiedades (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            rol             TEXT    NOT NULL,
-            subrol          TEXT    NOT NULL DEFAULT '0',
-            region_code     TEXT    NOT NULL DEFAULT '',
-            comuna          TEXT    NOT NULL DEFAULT '',
-            codigo_comuna   TEXT    NOT NULL DEFAULT '',
-            descripcion     TEXT    DEFAULT '',
-            encargado       TEXT    DEFAULT '',
-            activa          INTEGER DEFAULT 1,
-            created_at      TEXT    DEFAULT (datetime('now','localtime'))
-        );
+    cur = _cur(conn)
 
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_prop_rol
-            ON propiedades(rol, subrol, codigo_comuna);
-
-        CREATE TABLE IF NOT EXISTS consultas (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            propiedad_id    INTEGER NOT NULL REFERENCES propiedades(id),
-            fecha_consulta  TEXT    DEFAULT (datetime('now','localtime')),
-            deuda_total     INTEGER DEFAULT 0,
-            exento          INTEGER DEFAULT 0,
-            destino         TEXT    DEFAULT '',
-            direccion       TEXT    DEFAULT '',
-            propietario     TEXT    DEFAULT '',
-            tiene_cuotas    INTEGER DEFAULT 0,
-            cuotas_json     TEXT    DEFAULT '[]',
-            cambios_json    TEXT    DEFAULT '[]',
-            fuente          TEXT    DEFAULT 'SII.cl'
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_consultas_prop
-            ON consultas(propiedad_id, fecha_consulta DESC);
-    """)
-    conn.commit()
-
-    # Migracion: agregar columna encargado si no existe (para DBs existentes)
-    try:
-        conn.execute("SELECT encargado FROM propiedades LIMIT 1")
-    except sqlite3.OperationalError:
-        conn.execute("ALTER TABLE propiedades ADD COLUMN encargado TEXT DEFAULT ''")
+    if _PG:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS propiedades (
+                id              SERIAL PRIMARY KEY,
+                rol             TEXT    NOT NULL,
+                subrol          TEXT    NOT NULL DEFAULT '0',
+                region_code     TEXT    NOT NULL DEFAULT '',
+                comuna          TEXT    NOT NULL DEFAULT '',
+                codigo_comuna   TEXT    NOT NULL DEFAULT '',
+                descripcion     TEXT    DEFAULT '',
+                encargado       TEXT    DEFAULT '',
+                activa          INTEGER DEFAULT 1,
+                created_at      TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_prop_rol
+                ON propiedades(rol, subrol, codigo_comuna)
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS consultas (
+                id              SERIAL PRIMARY KEY,
+                propiedad_id    INTEGER NOT NULL REFERENCES propiedades(id),
+                fecha_consulta  TIMESTAMP DEFAULT NOW(),
+                deuda_total     INTEGER DEFAULT 0,
+                exento          INTEGER DEFAULT 0,
+                destino         TEXT    DEFAULT '',
+                direccion       TEXT    DEFAULT '',
+                propietario     TEXT    DEFAULT '',
+                tiene_cuotas    INTEGER DEFAULT 0,
+                cuotas_json     TEXT    DEFAULT '[]',
+                cambios_json    TEXT    DEFAULT '[]',
+                fuente          TEXT    DEFAULT 'SII.cl'
+            )
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_consultas_prop
+                ON consultas(propiedad_id, fecha_consulta DESC)
+        """)
         conn.commit()
+    else:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS propiedades (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                rol             TEXT    NOT NULL,
+                subrol          TEXT    NOT NULL DEFAULT '0',
+                region_code     TEXT    NOT NULL DEFAULT '',
+                comuna          TEXT    NOT NULL DEFAULT '',
+                codigo_comuna   TEXT    NOT NULL DEFAULT '',
+                descripcion     TEXT    DEFAULT '',
+                encargado       TEXT    DEFAULT '',
+                activa          INTEGER DEFAULT 1,
+                created_at      TEXT    DEFAULT (datetime('now','localtime'))
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_prop_rol
+                ON propiedades(rol, subrol, codigo_comuna);
+            CREATE TABLE IF NOT EXISTS consultas (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                propiedad_id    INTEGER NOT NULL REFERENCES propiedades(id),
+                fecha_consulta  TEXT    DEFAULT (datetime('now','localtime')),
+                deuda_total     INTEGER DEFAULT 0,
+                exento          INTEGER DEFAULT 0,
+                destino         TEXT    DEFAULT '',
+                direccion       TEXT    DEFAULT '',
+                propietario     TEXT    DEFAULT '',
+                tiene_cuotas    INTEGER DEFAULT 0,
+                cuotas_json     TEXT    DEFAULT '[]',
+                cambios_json    TEXT    DEFAULT '[]',
+                fuente          TEXT    DEFAULT 'SII.cl'
+            );
+            CREATE INDEX IF NOT EXISTS idx_consultas_prop
+                ON consultas(propiedad_id, fecha_consulta DESC);
+        """)
+        conn.commit()
+        # Migracion SQLite: agregar encargado si no existe
+        try:
+            conn.execute("SELECT encargado FROM propiedades LIMIT 1")
+        except sqlite3.OperationalError:
+            conn.execute("ALTER TABLE propiedades ADD COLUMN encargado TEXT DEFAULT ''")
+            conn.commit()
 
     conn.close()
-    print(f"[OK] Base de datos lista en: {DB_PATH}")
+    db_name = "PostgreSQL" if _PG else str(DB_PATH)
+    print(f"[OK] Base de datos lista ({db_name})")
 
 
 # -- PROPIEDADES ---------------------------------------------------------------
@@ -75,32 +164,33 @@ def init_db():
 def upsert_propiedad(rol, subrol, region_code, comuna, codigo_comuna="", descripcion="", encargado=""):
     """Inserta o retorna la propiedad. Devuelve el id."""
     conn = get_conn()
-    cur = conn.execute(
-        "SELECT id FROM propiedades WHERE rol=? AND subrol=? AND codigo_comuna=?",
-        (rol, subrol, codigo_comuna)
-    )
-    row = cur.fetchone()
+    row = _fetchone(conn, "SELECT id FROM propiedades WHERE rol=? AND subrol=? AND codigo_comuna=?",
+                    (rol, subrol, codigo_comuna))
     if row:
-        conn.execute(
-            "UPDATE propiedades SET descripcion=?, region_code=?, comuna=?, encargado=COALESCE(NULLIF(?,''),(SELECT encargado FROM propiedades WHERE id=?)), activa=1 WHERE id=?",
-            (descripcion, region_code, comuna, encargado, row["id"], row["id"])
-        )
-        conn.commit()
         prop_id = row["id"]
-    else:
-        cur = conn.execute(
-            "INSERT INTO propiedades(rol,subrol,region_code,comuna,codigo_comuna,descripcion,encargado) VALUES(?,?,?,?,?,?,?)",
-            (rol, subrol, region_code, comuna, codigo_comuna, descripcion, encargado)
-        )
+        _execute(conn,
+            "UPDATE propiedades SET descripcion=?, region_code=?, comuna=?, encargado=COALESCE(NULLIF(?,''),(SELECT encargado FROM propiedades WHERE id=?)), activa=1 WHERE id=?",
+            (descripcion, region_code, comuna, encargado, prop_id, prop_id))
         conn.commit()
-        prop_id = cur.lastrowid
+    else:
+        if _PG:
+            r = _fetchone(conn,
+                "INSERT INTO propiedades(rol,subrol,region_code,comuna,codigo_comuna,descripcion,encargado) VALUES(?,?,?,?,?,?,?) RETURNING id",
+                (rol, subrol, region_code, comuna, codigo_comuna, descripcion, encargado))
+            prop_id = r["id"]
+        else:
+            cur = _execute(conn,
+                "INSERT INTO propiedades(rol,subrol,region_code,comuna,codigo_comuna,descripcion,encargado) VALUES(?,?,?,?,?,?,?)",
+                (rol, subrol, region_code, comuna, codigo_comuna, descripcion, encargado))
+            prop_id = cur.lastrowid
+        conn.commit()
     conn.close()
     return prop_id
 
 
 def get_todas_propiedades():
     conn = get_conn()
-    rows = conn.execute("""
+    rows = _fetchall(conn, """
         SELECT p.*,
                c.fecha_consulta as ultima_consulta,
                c.deuda_total as ultima_deuda,
@@ -116,21 +206,21 @@ def get_todas_propiedades():
         )
         WHERE p.activa = 1
         ORDER BY p.id
-    """).fetchall()
+    """)
     conn.close()
-    return [dict(r) for r in rows]
+    return rows
 
 
 def get_propiedad(prop_id):
     conn = get_conn()
-    row = conn.execute("SELECT * FROM propiedades WHERE id=?", (prop_id,)).fetchone()
+    row = _fetchone(conn, "SELECT * FROM propiedades WHERE id=?", (prop_id,))
     conn.close()
-    return dict(row) if row else None
+    return row
 
 
 def eliminar_propiedad(prop_id):
     conn = get_conn()
-    conn.execute("UPDATE propiedades SET activa=0 WHERE id=?", (prop_id,))
+    _execute(conn, "UPDATE propiedades SET activa=0 WHERE id=?", (prop_id,))
     conn.commit()
     conn.close()
 
@@ -147,7 +237,7 @@ def update_propiedad(prop_id, campos: dict):
             vals.append(campos[k])
     if sets:
         vals.append(prop_id)
-        conn.execute(f"UPDATE propiedades SET {','.join(sets)} WHERE id=?", vals)
+        _execute(conn, f"UPDATE propiedades SET {','.join(sets)} WHERE id=?", vals)
         conn.commit()
     conn.close()
 
@@ -155,19 +245,13 @@ def update_propiedad(prop_id, campos: dict):
 # -- CONSULTAS / HISTORIAL -----------------------------------------------------
 
 def guardar_consulta(propiedad_id, datos: dict) -> dict:
-    """
-    Guarda una consulta y compara con la anterior para detectar cambios.
-    Retorna los datos enriquecidos con el campo 'cambios'.
-    """
+    """Guarda una consulta y compara con la anterior para detectar cambios."""
     conn = get_conn()
 
-    # Obtener ultima consulta anterior
-    ultima = conn.execute(
+    ultima = _fetchone(conn,
         "SELECT cuotas_json, deuda_total FROM consultas WHERE propiedad_id=? ORDER BY fecha_consulta DESC LIMIT 1",
-        (propiedad_id,)
-    ).fetchone()
+        (propiedad_id,))
 
-    # Detectar cambios entre consultas
     cambios = []
     if ultima:
         cuotas_anterior = json.loads(ultima["cuotas_json"])
@@ -181,13 +265,10 @@ def guardar_consulta(propiedad_id, datos: dict) -> dict:
                 cambios.append({
                     "cuota": n,
                     "nombre": cuota.get("nombre", f"Cuota {n}"),
-                    "de": estado_ant,
-                    "a": estado_nuevo,
+                    "de": estado_ant, "a": estado_nuevo,
                     "fecha": datetime.now().isoformat(),
                     "monto": cuota.get("monto", 0),
                 })
-
-        # Comparar deuda
         deuda_ant = ultima["deuda_total"] or 0
         deuda_nueva = datos.get("deuda_total", 0)
         if deuda_nueva < deuda_ant and deuda_ant > 0:
@@ -200,7 +281,7 @@ def guardar_consulta(propiedad_id, datos: dict) -> dict:
     cuotas_json = json.dumps(datos.get("cuotas", []), ensure_ascii=False)
     cambios_json = json.dumps(cambios, ensure_ascii=False)
 
-    conn.execute("""
+    _execute(conn, """
         INSERT INTO consultas
             (propiedad_id, deuda_total, exento, destino, direccion, propietario,
              tiene_cuotas, cuotas_json, cambios_json, fuente)
@@ -213,8 +294,7 @@ def guardar_consulta(propiedad_id, datos: dict) -> dict:
         datos.get("direccion", ""),
         datos.get("propietario", ""),
         datos.get("tiene_cuotas", 0),
-        cuotas_json,
-        cambios_json,
+        cuotas_json, cambios_json,
         datos.get("fuente", "SII.cl"),
     ))
     conn.commit()
@@ -227,16 +307,15 @@ def guardar_consulta(propiedad_id, datos: dict) -> dict:
 def get_historial(propiedad_id, limite=20):
     """Retorna las ultimas N consultas de una propiedad."""
     conn = get_conn()
-    rows = conn.execute("""
+    rows = _fetchall(conn, """
         SELECT * FROM consultas
         WHERE propiedad_id = ?
         ORDER BY fecha_consulta DESC
         LIMIT ?
-    """, (propiedad_id, limite)).fetchall()
+    """, (propiedad_id, limite))
     conn.close()
     historial = []
-    for r in rows:
-        d = dict(r)
+    for d in rows:
         d["cuotas"] = json.loads(d.pop("cuotas_json", "[]"))
         d["cambios"] = json.loads(d.pop("cambios_json", "[]"))
         historial.append(d)
@@ -246,22 +325,23 @@ def get_historial(propiedad_id, limite=20):
 def get_resumen_global():
     """Estadisticas generales del portafolio."""
     conn = get_conn()
-    total = conn.execute("SELECT COUNT(*) FROM propiedades WHERE activa=1").fetchone()[0]
+    row = _fetchone(conn, "SELECT COUNT(*) as cnt FROM propiedades WHERE activa=1")
+    total = row["cnt"] if row else 0
 
-    ultima_data = conn.execute("""
+    ultima_data = _fetchall(conn, """
         SELECT c.deuda_total, c.exento
         FROM propiedades p
         JOIN consultas c ON c.id = (
             SELECT id FROM consultas WHERE propiedad_id=p.id ORDER BY fecha_consulta DESC LIMIT 1
         )
         WHERE p.activa=1
-    """).fetchall()
+    """)
     conn.close()
 
-    deuda_total = sum(r[0] for r in ultima_data if r[0])
-    exentas = sum(1 for r in ultima_data if r[1])
-    con_deuda = sum(1 for r in ultima_data if r[0] and r[0] > 0)
-    al_dia = sum(1 for r in ultima_data if r[0] == 0 and not r[1])
+    deuda_total = sum(r["deuda_total"] for r in ultima_data if r["deuda_total"])
+    exentas = sum(1 for r in ultima_data if r["exento"])
+    con_deuda = sum(1 for r in ultima_data if r["deuda_total"] and r["deuda_total"] > 0)
+    al_dia = sum(1 for r in ultima_data if r["deuda_total"] == 0 and not r["exento"])
     sin_consultar = total - len(ultima_data)
 
     return {
@@ -278,4 +358,7 @@ def get_resumen_global():
 if __name__ == "__main__":
     init_db()
     print("Base de datos inicializada correctamente.")
-    print(f"Archivo: {DB_PATH}")
+    if _PG:
+        print("Usando PostgreSQL")
+    else:
+        print(f"Archivo: {DB_PATH}")
