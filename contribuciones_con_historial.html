@@ -596,7 +596,7 @@ function App(){
         ):pf.map(prop=>(
           <PropertyRow key={prop.id} prop={prop} onConsultar={consultar}
             loading={loadingIds.has(prop.id)} resultado={resultados[prop.id]}
-            onDelete={id=>{setProps(p=>p.filter(x=>x.id!==id));setResultados(r=>{const n={...r};delete n[id];return n;});}}
+            onDelete={id=>{if(!confirm("Eliminar esta propiedad?"))return;const p=props.find(x=>x.id===id);if(p?.propiedad_id&&backendOk){fetch(`${API}/propiedades/${p.propiedad_id}`,{method:"DELETE"}).catch(()=>{});}setProps(pr=>pr.filter(x=>x.id!==id));setResultados(r=>{const n={...r};delete n[id];return n;});}}
             onVerHistorial={p=>setHistorialProp({...p,_historialLocal:p._historialLocal,propiedad_id:resultados[p.id]?.propiedad_id||p.propiedad_id||null})}
             onUpdateEncargado={updateEncargado}/>
         ))}
