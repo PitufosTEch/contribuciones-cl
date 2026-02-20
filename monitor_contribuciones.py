@@ -297,34 +297,45 @@ def enviar_email(destinatario, asunto, html_body):
 
 
 def enviar_whatsapp(alertas, resultados):
-    """Envia resumen por WhatsApp via Meta Business API."""
+    """Envia resumen por WhatsApp via Meta Business API (template message)."""
     if not WA_TOKEN:
         print("[WA] WA_TOKEN no configurado. Omitiendo WhatsApp.")
         return False
 
-    # Construir mensaje de texto
     fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
     total_deuda = sum(r["deuda_total"] for r in resultados)
-    lineas = [f"*CONTRIBUCIONES CL* | {fecha}", ""]
 
+    # Construir detalle para el parametro {{3}} del template
     if alertas:
-        lineas.append(f"⚠ *{len(alertas)} ALERTA(S):*")
+        partes = []
         for a in alertas:
             p = a["propiedad"]
-            lineas.append(f"")
-            lineas.append(f"*ROL {p['rol']}* | {p['comuna']}")
-            lineas.append(f"{p['direccion']} | {p['destino']}")
-            for m in a["motivos"]:
-                lineas.append(f"  → {m}")
-            for cv in p["cuotas_vencidas"]:
-                lineas.append(f"  C{cv['cuota']} {cv['agno']} | Vto: {cv['vencimiento']} | ${cv['total_pago']:,.0f}")
+            motivos = "; ".join(a["motivos"])
+            partes.append(f"ROL {p['rol']} {p['comuna']} - {motivos}.")
+        detalle = " ".join(partes)
     else:
-        lineas.append("✅ Todas las propiedades dentro de los umbrales.")
+        detalle = "Todas las propiedades dentro de los umbrales."
 
-    lineas.append("")
-    lineas.append(f"*Portafolio:* {len(resultados)} propiedades | Deuda total: ${total_deuda:,.0f}")
-
-    texto = "\n".join(lineas)
+    # Usar template 'contribuciones_alerta' con 3 parametros: fecha, deuda, detalle
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": WA_DESTINO,
+        "type": "template",
+        "template": {
+            "name": "contribuciones_alerta",
+            "language": {"code": "es"},
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": fecha},
+                        {"type": "text", "text": f"${total_deuda:,.0f}"},
+                        {"type": "text", "text": detalle},
+                    ],
+                }
+            ],
+        },
+    }
 
     try:
         r = requests.post(
@@ -333,12 +344,7 @@ def enviar_whatsapp(alertas, resultados):
                 "Authorization": f"Bearer {WA_TOKEN}",
                 "Content-Type": "application/json",
             },
-            json={
-                "messaging_product": "whatsapp",
-                "to": WA_DESTINO,
-                "type": "text",
-                "text": {"body": texto},
-            },
+            json=payload,
             timeout=15,
         )
         data = r.json()
