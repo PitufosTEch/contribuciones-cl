@@ -10,13 +10,15 @@
       "rol": "13",
       "subrol": "1",
       "codigo_comuna": "9201",
-      "descripcion": "Local Comercial Temuco"
+      "descripcion": "Local Comercial Temuco",
+      "encargado": ""
     },
     {
       "rol": "1",
       "subrol": "1",
       "codigo_comuna": "9201",
-      "descripcion": "Vivienda Balmaceda Temuco"
+      "descripcion": "Vivienda Balmaceda Temuco",
+      "encargado": ""
     }
   ]
 }

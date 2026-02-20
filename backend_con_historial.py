@@ -400,9 +400,36 @@ def reset_session():
     return jsonify({"status": "ok", "conv_id": sii_client.conv_id})
 
 
+def seed_propiedades():
+    """Carga propiedades desde propiedades_monitor.json si la DB esta vacia."""
+    CONFIG_FILE = Path(__file__).parent / "propiedades_monitor.json"
+    if not CONFIG_FILE.exists():
+        return
+    existing = get_todas_propiedades()
+    if existing:
+        return  # Ya hay propiedades, no sobreescribir
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+    for p in cfg.get("propiedades", []):
+        # Resolver nombre de comuna desde sii_comunas.json
+        comuna_nombre = ""
+        for reg, comunas in COMUNAS_POR_REGION.items():
+            for c in comunas:
+                if c["codigo"] == p.get("codigo_comuna", ""):
+                    comuna_nombre = c["nombre"]
+                    break
+        upsert_propiedad(
+            p["rol"], p.get("subrol", "0"), "",
+            comuna_nombre, p.get("codigo_comuna", ""),
+            p.get("descripcion", ""), p.get("encargado", "")
+        )
+    print(f"[OK] {len(cfg.get('propiedades', []))} propiedades cargadas desde config")
+
+
 if __name__ == "__main__":
     init_db()
     cargar_comunas()
+    seed_propiedades()
     get_sii_client()
     print()
     print("=" * 55)
