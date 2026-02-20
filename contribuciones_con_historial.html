@@ -7,56 +7,71 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        bg: { DEFAULT:'#0a0a0a', card:'#111111', hover:'#161616', border:'#1e1e1e', muted:'#404040' },
-        accent: { DEFAULT:'#22c55e', dim:'#166534', glow:'rgba(34,197,94,0.08)' },
-        danger: { DEFAULT:'#ef4444', dim:'#7f1d1d', glow:'rgba(239,68,68,0.08)' },
-        warn: { DEFAULT:'#f59e0b', dim:'#78350f' },
-        info: { DEFAULT:'#3b82f6', dim:'#1e3a5f' },
-      },
-      fontFamily: { sans:['Inter','sans-serif'], mono:['JetBrains Mono','monospace'] },
-      borderRadius: { xl:'12px', '2xl':'16px' },
-    }
-  }
-}
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#0a0a0a;color:#fafafa;font-family:'Inter',sans-serif;min-height:100vh}
-  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#262626;border-radius:3px}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  :root{
+    --bg:#050505;--bg2:#0a0a0a;--card:#0f0f0f;--card2:#141414;--border:#1a1a1a;--border2:#222;
+    --text:#fafafa;--text2:#a3a3a3;--text3:#525252;--text4:#333;
+    --green:#22c55e;--green-bg:rgba(34,197,94,0.06);--green-border:rgba(34,197,94,0.15);
+    --red:#ef4444;--red-bg:rgba(239,68,68,0.06);--red-border:rgba(239,68,68,0.15);
+    --yellow:#eab308;--yellow-bg:rgba(234,179,8,0.06);--yellow-border:rgba(234,179,8,0.15);
+    --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.06);--blue-border:rgba(59,130,246,0.15);
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:#262626;border-radius:99px}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-  .fade-in{animation:fadeIn 0.25s ease}
-  .slide-in{animation:slideIn 0.3s cubic-bezier(0.16,1,0.3,1)}
-  .t200{transition:all 200ms ease}
-  select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+  .fade-in{animation:fadeIn 0.3s cubic-bezier(0.16,1,0.3,1)}
+  .slide-in{animation:slideIn 0.35s cubic-bezier(0.16,1,0.3,1)}
+  .t{transition:all 200ms cubic-bezier(0.4,0,0.2,1)}
+  select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  input::placeholder{color:#383838}
+  .glow-green{box-shadow:0 0 20px rgba(34,197,94,0.08),inset 0 1px 0 rgba(34,197,94,0.05)}
+  .glow-red{box-shadow:0 0 20px rgba(239,68,68,0.08),inset 0 1px 0 rgba(239,68,68,0.05)}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const{useState,useCallback,useEffect,useMemo}=React;
+const{useState,useCallback,useEffect,useMemo,useRef}=React;
 
 const API = window.location.protocol === "file:" ? "http://localhost:5000" : "";
 const DEMO_MODE=false;
 
-// -- UTILS --------------------------------------------------------------------
+// -- UTILS / ICONS -----------------------------------------------------------
 const fmt=n=>n===0||!n?"$0":`$${n.toLocaleString("es-CL")}`;
-const EC={pagada:"#22c55e",pendiente:"#f59e0b",vencida:"#ef4444",exento:"#6b7280",sin_datos:"#333"};
-const EL={pagada:"Pagada",pendiente:"Pendiente",vencida:"Vencida",exento:"Exento",sin_datos:"Sin datos"};
+const EC={pagada:"var(--green)",pendiente:"var(--yellow)",vencida:"var(--red)",exento:"#6b7280",sin_datos:"#333"};
+const ECraw={pagada:"#22c55e",pendiente:"#eab308",vencida:"#ef4444",exento:"#6b7280",sin_datos:"#333"};
+const EL={pagada:"Pagada",pendiente:"Pendiente",vencida:"Vencida",exento:"Exento",sin_datos:"--"};
+
+// SVG icons inline
+const IconBuilding=()=><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16"/></svg>;
+const IconSearch=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>;
+const IconCheck=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>;
+const IconAlert=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>;
+const IconDollar=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>;
+const IconDownload=()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>;
+const IconUpload=()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>;
+const IconPlus=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconRefresh=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>;
+const IconX=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IconTrash=()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>;
+const IconChevron=()=><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>;
+const IconClock=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>;
 
 function Badge({estado,size="sm"}){
-  const bg=EC[estado]||"#333";
-  const cls=size==="xs"?"px-1.5 py-0.5 text-[9px]":"px-2.5 py-1 text-[10px]";
-  return <span className={`${cls} rounded-md font-mono font-semibold tracking-wider inline-block`}
-    style={{background:bg+"15",color:bg,border:`1px solid ${bg}30`}}>{EL[estado]||estado}</span>;
+  const bg=ECraw[estado]||"#333";
+  const isXs=size==="xs";
+  return <span className="t" style={{
+    display:"inline-flex",alignItems:"center",gap:"4px",
+    padding:isXs?"2px 6px":"3px 10px",borderRadius:"6px",
+    fontSize:isXs?"9px":"10px",fontFamily:"'JetBrains Mono',monospace",fontWeight:600,
+    letterSpacing:"0.05em",textTransform:"uppercase",
+    background:bg+"12",color:bg,border:`1px solid ${bg}22`
+  }}>{!isXs&&<span style={{width:6,height:6,borderRadius:"50%",background:bg,display:"inline-block"}}/>}{EL[estado]||estado}</span>;
 }
 
 // -- PAGOS PANEL (SII) --------------------------------------------------------
@@ -64,6 +79,7 @@ function PagosPanel({prop,onClose}){
   const[pagos,setPagos]=useState([]);
   const[loading,setLoading]=useState(true);
   const[error,setError]=useState("");
+  const totalPagado=useMemo(()=>pagos.reduce((s,p)=>s+(p.totalPagado||0),0),[pagos]);
 
   useEffect(()=>{
     if(!prop.codigo_comuna||!prop.rol){setLoading(false);setError("Datos insuficientes");return;}
@@ -76,47 +92,69 @@ function PagosPanel({prop,onClose}){
   },[prop]);
 
   return(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end" onClick={onClose}>
-      <div className="w-[480px] bg-bg border-l border-bg-border h-full overflow-y-auto slide-in" onClick={e=>e.stopPropagation()}>
-        <div className="p-6 border-b border-bg-border bg-bg-card sticky top-0 z-10">
-          <div className="flex justify-between items-start">
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:50,display:"flex",justifyContent:"flex-end"}} onClick={onClose}>
+      <div className="slide-in" style={{width:500,background:"var(--bg2)",borderLeft:"1px solid var(--border)",height:"100%",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+        {/* Header */}
+        <div style={{padding:"28px 28px 24px",borderBottom:"1px solid var(--border)",background:"var(--card)",position:"sticky",top:0,zIndex:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
-              <div className="text-xs text-neutral-500 tracking-widest uppercase mb-1">Historial de Pagos SII</div>
-              <div className="text-lg font-semibold text-white font-mono">ROL {prop.rol}-{prop.subrol}</div>
-              <div className="text-sm text-neutral-500 mt-0.5">{prop.comuna} | {prop.descripcion}</div>
+              <div style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:8}}>Historial de Pagos SII</div>
+              <div style={{fontSize:20,fontWeight:700,color:"#fff",fontFamily:"'JetBrains Mono',monospace"}}>ROL {prop.rol}-{prop.subrol}</div>
+              <div style={{fontSize:13,color:"var(--text3)",marginTop:4}}>{prop.comuna} &middot; {prop.descripcion}</div>
             </div>
-            <button onClick={onClose} className="w-9 h-9 rounded-xl border border-bg-border text-neutral-500 hover:text-white hover:border-neutral-500 t200 flex items-center justify-center text-lg">&times;</button>
+            <button onClick={onClose} className="t" style={{width:36,height:36,borderRadius:10,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
+              onMouseOver={e=>{e.currentTarget.style.borderColor="var(--text3)";e.currentTarget.style.color="#fff"}}
+              onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}><IconX/></button>
           </div>
+          {pagos.length>0&&(
+            <div style={{marginTop:20,display:"flex",gap:16}}>
+              <div style={{flex:1,background:"var(--green-bg)",border:"1px solid var(--green-border)",borderRadius:12,padding:"14px 16px"}}>
+                <div style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:4}}>TOTAL PAGADO</div>
+                <div style={{fontSize:22,fontWeight:700,color:"var(--green)",fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totalPagado)}</div>
+              </div>
+              <div style={{flex:1,background:"var(--card2)",border:"1px solid var(--border)",borderRadius:12,padding:"14px 16px"}}>
+                <div style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:4}}>PAGOS</div>
+                <div style={{fontSize:22,fontWeight:700,color:"#fff",fontFamily:"'JetBrains Mono',monospace"}}>{pagos.length}</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {loading?(
-          <div className="p-16 text-center text-neutral-500" style={{animation:"pulse 1.5s infinite"}}>Consultando SII...</div>
+          <div style={{padding:"80px 0",textAlign:"center",color:"var(--text3)",animation:"pulse 1.5s infinite"}}>
+            <IconClock/><div style={{marginTop:12,fontSize:13}}>Consultando SII...</div>
+          </div>
         ):error?(
-          <div className="p-16 text-center text-neutral-600">{error}</div>
+          <div style={{padding:"80px 0",textAlign:"center",color:"var(--text4)"}}>{error}</div>
         ):pagos.length===0?(
-          <div className="p-16 text-center text-neutral-600">Sin pagos registrados en SII.</div>
+          <div style={{padding:"80px 0",textAlign:"center",color:"var(--text4)"}}>Sin pagos registrados en SII.</div>
         ):(
-          <div className="p-5">
-            <div className="text-xs text-neutral-600 mb-4">{pagos.length} pagos encontrados</div>
+          <div style={{padding:24}}>
             {pagos.map((p,idx)=>{
               const monto=p.totalPagado||0;
               const fecha=p.fechaPago||"--";
               const tx=p.numeroTransaccion||"";
+              const isFirst=idx===0;
               return(
-                <div key={idx} className="flex gap-3.5 mb-1">
-                  <div className="flex flex-col items-center flex-shrink-0 pt-1">
-                    <div className={`w-2.5 h-2.5 rounded-full ${idx===0?"bg-accent ring-4 ring-accent/10":"bg-bg-border"}`}/>
-                    {idx<pagos.length-1&&<div className="w-px flex-1 bg-bg-border/60 mt-1"/>}
+                <div key={idx} style={{display:"flex",gap:16,marginBottom:4}}>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,paddingTop:6}}>
+                    <div style={{width:isFirst?12:8,height:isFirst?12:8,borderRadius:"50%",background:isFirst?"var(--green)":"var(--border2)",boxShadow:isFirst?"0 0 12px rgba(34,197,94,0.3)":"none"}}/>
+                    {idx<pagos.length-1&&<div style={{width:1,flex:1,background:"var(--border)",marginTop:4}}/>}
                   </div>
-                  <div className={`flex-1 rounded-xl p-4 mb-2 ${idx===0?"bg-accent-glow border border-accent/15":"bg-bg-card border border-bg-border/60"}`}>
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-neutral-300 font-medium">{fecha}</div>
-                      <div className={`font-mono text-base font-bold ${idx===0?"text-accent":"text-white"}`}>{fmt(monto)}</div>
+                  <div className="t" style={{flex:1,borderRadius:14,padding:"18px 20px",marginBottom:8,
+                    background:isFirst?"var(--green-bg)":"var(--card)",
+                    border:`1px solid ${isFirst?"var(--green-border)":"var(--border)"}`,
+                    cursor:"default"}}
+                    onMouseOver={e=>{if(!isFirst)e.currentTarget.style.borderColor="var(--border2)"}}
+                    onMouseOut={e=>{if(!isFirst)e.currentTarget.style.borderColor="var(--border)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div style={{fontSize:13,color:"var(--text2)",fontWeight:500}}>{fecha}</div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:17,fontWeight:700,color:isFirst?"var(--green)":"#fff"}}>{fmt(monto)}</div>
                     </div>
                     {p.propiedad?.[0]?.valorCuota && p.propiedad[0].valorCuota !== monto &&(
-                      <div className="text-xs text-neutral-600 font-mono mt-1">Base: {fmt(p.propiedad[0].valorCuota)}</div>
+                      <div style={{fontSize:11,color:"var(--text4)",fontFamily:"'JetBrains Mono',monospace",marginTop:4}}>Cuota base: {fmt(p.propiedad[0].valorCuota)}</div>
                     )}
-                    {tx&&<div className="text-[10px] text-neutral-700 mt-2 font-mono">Tx #{tx}</div>}
+                    {tx&&<div style={{fontSize:10,color:"var(--text4)",marginTop:8,fontFamily:"'JetBrains Mono',monospace"}}>Tx #{tx}</div>}
                   </div>
                 </div>
               );
@@ -129,12 +167,13 @@ function PagosPanel({prop,onClose}){
 }
 
 // -- PROPERTY ROW -------------------------------------------------------------
-const GRID="grid grid-cols-[2fr_1.2fr_1fr_0.8fr_1.1fr_0.7fr_auto]";
-
 function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerPagos,onUpdateEncargado}){
   const[expanded,setExpanded]=useState(false);
   const hasDebt=resultado?.deuda_total>0;
   const hayCambios=resultado?.cambios?.length>0;
+  const rowRef=useRef(null);
+
+  const statusColor=!resultado?"transparent":hasDebt?"var(--red)":resultado.exento?"#6b7280":"var(--green)";
 
   const editEncargado=(e)=>{
     e.stopPropagation();
@@ -143,110 +182,135 @@ function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerPagos,onU
   };
 
   return(
-    <div className="border-b border-bg-border/40">
-      <div className={`${GRID} items-center px-5 py-4 gap-4 t200 cursor-pointer ${expanded?"bg-bg-hover":"hover:bg-bg-hover/50"}`}
-        onClick={()=>resultado&&setExpanded(!expanded)}>
+    <div className="fade-in" style={{margin:"0 24px 8px",borderRadius:16,overflow:"hidden",border:`1px solid ${expanded?"var(--border2)":"var(--border)"}`,background:"var(--card)",transition:"all 200ms"}}>
+      {/* Main row */}
+      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1.1fr 0.9fr 0.8fr 1fr auto",alignItems:"center",gap:0,cursor:resultado?"pointer":"default",transition:"background 200ms",background:expanded?"var(--card2)":"transparent"}}
+        onClick={()=>resultado&&setExpanded(!expanded)}
+        onMouseOver={e=>{if(!expanded)e.currentTarget.style.background="var(--card2)"}}
+        onMouseOut={e=>{if(!expanded)e.currentTarget.style.background="transparent"}}>
+
+        {/* Status bar */}
+        <div style={{width:4,height:"100%",background:statusColor,borderRadius:"4px 0 0 4px",transition:"background 300ms"}}/>
+
         {/* ROL + Descripcion */}
-        <div>
-          <div className="flex items-center gap-2.5">
-            <span className="font-mono text-sm font-bold text-white">{prop.rol}-{prop.subrol}</span>
-            {hayCambios&&<span className="px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider bg-warn/10 text-warn border border-warn/20">CAMBIO</span>}
+        <div style={{padding:"18px 20px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,color:"#fff",letterSpacing:"-0.01em"}}>{prop.rol}-{prop.subrol}</span>
+            {hayCambios&&<span style={{padding:"2px 8px",borderRadius:6,fontSize:9,fontWeight:700,letterSpacing:"0.1em",background:"var(--yellow-bg)",color:"var(--yellow)",border:"1px solid var(--yellow-border)"}}>CAMBIO</span>}
+            {resultado&&<span style={{width:8,height:8,borderRadius:4,background:statusColor,display:"inline-block",opacity:0.8}}/>}
           </div>
-          <div className="text-[13px] text-neutral-500 mt-1 leading-tight">{prop.descripcion||resultado?.direccion||"Sin descripcion"}</div>
+          <div style={{fontSize:12,color:"var(--text3)",marginTop:5,lineHeight:1.3}}>{prop.descripcion||resultado?.direccion||"Sin descripcion"}</div>
         </div>
 
         {/* Comuna */}
-        <div>
-          <div className="text-[13px] text-neutral-300">{prop.comuna||resultado?.comuna_descripcion||""}</div>
-          <div className="text-xs text-neutral-600 mt-0.5">{resultado?.destino||""}</div>
+        <div style={{padding:"18px 12px"}}>
+          <div style={{fontSize:13,color:"var(--text2)"}}>{prop.comuna||resultado?.comuna_descripcion||""}</div>
+          <div style={{fontSize:11,color:"var(--text4)",marginTop:2}}>{resultado?.destino||""}</div>
         </div>
 
         {/* Encargado */}
-        <div className="cursor-pointer group" onClick={editEncargado} title="Click para editar">
+        <div style={{padding:"18px 12px",cursor:"pointer"}} onClick={editEncargado} title="Click para editar">
           {prop.encargado?(
-            <div className="text-[13px] text-neutral-300 group-hover:text-accent t200">{prop.encargado}</div>
+            <div className="t" style={{fontSize:13,color:"var(--text2)"}}
+              onMouseOver={e=>e.currentTarget.style.color="var(--green)"}
+              onMouseOut={e=>e.currentTarget.style.color="var(--text2)"}>{prop.encargado}</div>
           ):(
-            <div className="text-[13px] text-neutral-700 group-hover:text-neutral-400 t200">--</div>
+            <div className="t" style={{fontSize:12,color:"var(--text4)",fontStyle:"italic"}}
+              onMouseOver={e=>{e.currentTarget.style.color="var(--text2)";e.currentTarget.textContent="Asignar"}}
+              onMouseOut={e=>{e.currentTarget.style.color="var(--text4)";e.currentTarget.textContent="--"}}>--</div>
           )}
         </div>
 
         {/* Propietario */}
-        <div className="text-[12px] font-mono text-neutral-500 truncate" title={resultado?.propietario}>
-          {resultado?.propietario?.slice(0,18)||"--"}
+        <div style={{padding:"18px 8px",fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:"var(--text3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={resultado?.propietario}>
+          {resultado?.propietario?.slice(0,20)||"--"}
         </div>
 
-        {/* Deuda */}
-        {resultado?(
-          <div className={`text-center font-mono font-bold text-[15px] ${hasDebt?"text-danger":"text-accent"}`}>
-            {hasDebt?fmt(resultado.deuda_total):resultado.exento?"--":"Al dia"}
-          </div>
-        ):(
-          <div className="text-center text-neutral-700">--</div>
-        )}
-
-        {/* Cuotas */}
-        {resultado?(
-          <div className="flex justify-center gap-1">
-            {resultado.cuotas?.slice(0,4).map(c=>(
-              <div key={c.numero} className="w-2 h-2 rounded-full" style={{background:EC[c.estado]||"#333"}} title={`C${c.numero}: ${EL[c.estado]}`}/>
-            ))}
-          </div>
-        ):(
-          <div className="text-center text-neutral-700 text-xs">--</div>
-        )}
+        {/* Deuda + Cuotas */}
+        <div style={{padding:"18px 12px",textAlign:"center"}}>
+          {resultado?(
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontWeight:700,fontSize:16,color:hasDebt?"var(--red)":"var(--green)",letterSpacing:"-0.02em"}}>
+                {hasDebt?fmt(resultado.deuda_total):resultado.exento?"Exento":"Al dia"}
+              </div>
+              <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:8}}>
+                {resultado.cuotas?.slice(0,4).map(c=>(
+                  <div key={c.numero} title={`C${c.numero}: ${EL[c.estado]}`} style={{width:22,height:6,borderRadius:3,background:ECraw[c.estado]||"#222",opacity:0.85,transition:"all 200ms"}}/>
+                ))}
+              </div>
+            </div>
+          ):(
+            <div style={{color:"var(--text4)",fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>--</div>
+          )}
+        </div>
 
         {/* Actions */}
-        <div className="flex gap-2 items-center">
-          <button onClick={e=>{e.stopPropagation();onConsultar(prop);}} disabled={loading}
-            className={`px-3.5 py-2 rounded-xl text-[11px] font-semibold tracking-wide t200 border ${
-              loading?"bg-bg-card border-bg-border text-neutral-600 cursor-not-allowed":
-              resultado?"bg-bg-card border-bg-border text-accent hover:border-accent/30 hover:bg-accent-glow":
-              "bg-accent/10 border-accent/25 text-accent hover:bg-accent/15"}`}>
-            {loading?"...":resultado?"ACT":"SII"}
+        <div style={{padding:"18px 20px 18px 8px",display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={e=>{e.stopPropagation();onConsultar(prop);}} disabled={loading} className="t"
+            style={{padding:"8px 16px",borderRadius:10,fontSize:11,fontWeight:600,letterSpacing:"0.05em",cursor:loading?"not-allowed":"pointer",border:"1px solid",
+              ...(loading?{background:"transparent",borderColor:"var(--border)",color:"var(--text4)"}:
+                resultado?{background:"transparent",borderColor:"var(--border)",color:"var(--green)"}:
+                {background:"var(--green-bg)",borderColor:"var(--green-border)",color:"var(--green)"})
+            }}
+            onMouseOver={e=>{if(!loading){e.currentTarget.style.borderColor="var(--green)";e.currentTarget.style.background="var(--green-bg)"}}}
+            onMouseOut={e=>{if(!loading){e.currentTarget.style.borderColor=resultado?"var(--border)":"var(--green-border)";e.currentTarget.style.background=resultado?"transparent":"var(--green-bg)"}}}
+          >
+            {loading?<span style={{display:"inline-flex",gap:3}}><span style={{animation:"pulse 1s infinite"}}>.</span><span style={{animation:"pulse 1s infinite 0.2s"}}>.</span><span style={{animation:"pulse 1s infinite 0.4s"}}>.</span></span>:resultado?<span style={{display:"inline-flex",alignItems:"center",gap:5}}><IconRefresh/>ACT</span>:"SII"}
           </button>
           {resultado&&(
-            <button onClick={e=>{e.stopPropagation();onVerPagos(prop);}} title="Historial de pagos SII"
-              className="px-2.5 py-2 rounded-xl border border-bg-border text-neutral-600 hover:text-accent hover:border-accent/25 hover:bg-accent-glow t200 text-[11px] font-semibold">$</button>
+            <button onClick={e=>{e.stopPropagation();onVerPagos(prop);}} title="Historial de pagos SII" className="t"
+              style={{padding:"8px 12px",borderRadius:10,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600}}
+              onMouseOver={e=>{e.currentTarget.style.borderColor="var(--green-border)";e.currentTarget.style.color="var(--green)";e.currentTarget.style.background="var(--green-bg)"}}
+              onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)";e.currentTarget.style.background="transparent"}}
+            ><IconDollar/><span>Pagos</span></button>
           )}
-          <button onClick={e=>{e.stopPropagation();onDelete(prop.id);}} title="Eliminar"
-            className="w-8 h-8 rounded-xl border border-bg-border text-neutral-700 hover:text-danger hover:border-danger/25 hover:bg-danger-glow t200 flex items-center justify-center text-sm">&times;</button>
+          <button onClick={e=>{e.stopPropagation();onDelete(prop.id);}} title="Eliminar" className="t"
+            style={{width:34,height:34,borderRadius:10,border:"1px solid var(--border)",background:"transparent",color:"var(--text4)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
+            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--red-border)";e.currentTarget.style.color="var(--red)";e.currentTarget.style.background="var(--red-bg)"}}
+            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text4)";e.currentTarget.style.background="transparent"}}
+          ><IconTrash/></button>
         </div>
       </div>
 
       {/* EXPANDED DETAIL */}
       {expanded&&resultado&&(
-        <div className="bg-bg-card/50 border-t border-bg-border/40 px-5 py-5 fade-in">
-          <div className="grid grid-cols-4 gap-3 mb-5">
+        <div className="fade-in" style={{borderTop:"1px solid var(--border)",padding:24,background:"var(--bg2)"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
             {[
               {l:"Direccion",v:resultado.direccion||"--"},
               {l:"Propietario",v:resultado.propietario||"--"},
               {l:"Destino",v:resultado.destino||"--"},
               {l:"Deuda Total",v:fmt(resultado.deuda_total),hi:resultado.deuda_total>0},
             ].map(({l,v,hi})=>(
-              <div key={l} className="bg-bg rounded-xl border border-bg-border/60 p-4">
-                <div className="text-[10px] text-neutral-600 tracking-widest uppercase mb-2">{l}</div>
-                <div className={`font-mono text-sm font-semibold ${hi?"text-danger":"text-neutral-200"} truncate`} title={v}>{v}</div>
+              <div key={l} style={{background:"var(--card)",borderRadius:14,border:`1px solid ${hi?"var(--red-border)":"var(--border)"}`,padding:"16px 18px",
+                ...(hi?{boxShadow:"0 0 15px rgba(239,68,68,0.04)"}:{})}}>
+                <div style={{fontSize:9,color:"var(--text4)",letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:8}}>{l}</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:600,color:hi?"var(--red)":"var(--text2)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={v}>{v}</div>
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            {resultado.cuotas.map(c=>(
-              <div key={c.numero} className="bg-bg rounded-xl border p-4" style={{borderColor:(EC[c.estado]||"#1e1e1e")+"25"}}>
-                <div className="flex justify-between items-center mb-3">
-                  <div className="text-xs text-neutral-500">{c.nombre}</div>
-                  <Badge estado={c.estado} size="xs"/>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+            {resultado.cuotas.map(c=>{
+              const col=ECraw[c.estado]||"#333";
+              return(
+                <div key={c.numero} style={{background:"var(--card)",borderRadius:14,border:`1px solid ${col}20`,padding:"18px",position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:col,opacity:0.5}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,marginTop:4}}>
+                    <div style={{fontSize:11,color:"var(--text3)",fontWeight:500}}>{c.nombre}</div>
+                    <Badge estado={c.estado} size="xs"/>
+                  </div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:700,color:"#fff"}}>{fmt(c.total_pago||c.monto)}</div>
+                  {c.monto>0&&c.total_pago!==c.monto&&(
+                    <div style={{fontSize:10,color:"var(--text4)",fontFamily:"'JetBrains Mono',monospace",marginTop:6}}>Base: {fmt(c.monto)}</div>
+                  )}
+                  {c.intereses>0&&<div style={{fontSize:10,color:"#ef444480",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>Intereses: {fmt(c.intereses)}</div>}
+                  {c.reajustes>0&&<div style={{fontSize:10,color:"#eab30880",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>Reajustes: {fmt(c.reajustes)}</div>}
+                  <div style={{fontSize:10,color:"var(--text4)",marginTop:8}}>Vto: {c.vencimiento||"--"}</div>
                 </div>
-                <div className="font-mono text-lg font-bold text-white">{fmt(c.total_pago||c.monto)}</div>
-                {c.monto>0&&c.total_pago!==c.monto&&(
-                  <div className="text-[11px] text-neutral-600 font-mono mt-1">Base: {fmt(c.monto)}</div>
-                )}
-                {c.intereses>0&&<div className="text-[11px] text-danger/60 font-mono">Int: {fmt(c.intereses)}</div>}
-                {c.reajustes>0&&<div className="text-[11px] text-warn/60 font-mono">Reaj: {fmt(c.reajustes)}</div>}
-                <div className="text-[11px] text-neutral-700 mt-2">Vto: {c.vencimiento||"--"}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          <div className="mt-4 flex justify-between text-[11px] text-neutral-700">
+          <div style={{marginTop:16,display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--text4)"}}>
             <span>{resultado.fuente}</span>
             <span>{resultado.ultima_actualizacion?new Date(resultado.ultima_actualizacion).toLocaleString("es-CL"):""}</span>
           </div>
@@ -268,52 +332,59 @@ function AddModal({regiones,comunasPorRegion,onAdd,onClose}){
     }
   },[f.region,comunas.length]);
 
+  const inputStyle={width:"100%",background:"var(--bg2)",border:"1px solid var(--border)",color:"#fff",padding:"12px 16px",borderRadius:12,fontSize:13,fontFamily:"inherit",outline:"none",transition:"border 200ms"};
+
   return(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-bg-card border border-bg-border rounded-2xl p-8 w-[480px] shadow-2xl fade-in" onClick={e=>e.stopPropagation()}>
-        <div className="text-lg font-semibold text-white mb-6">Agregar Propiedad</div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}} onClick={onClose}>
+      <div className="fade-in" style={{background:"var(--card)",border:"1px solid var(--border2)",borderRadius:20,padding:36,width:500,boxShadow:"0 25px 50px rgba(0,0,0,0.5)"}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:20,fontWeight:700,color:"#fff",marginBottom:6}}>Agregar Propiedad</div>
+        <div style={{fontSize:12,color:"var(--text3)",marginBottom:28}}>Ingresa los datos del rol de avaluo</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
           <div>
-            <label className="text-[11px] text-neutral-500 tracking-widest uppercase block mb-2">ROL (Manzana) *</label>
+            <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>ROL (Manzana) *</label>
             <input type="text" placeholder="ej: 3456" value={f.rol} onChange={e=>setF({...f,rol:e.target.value})}
-              className="w-full bg-bg border border-bg-border text-white px-4 py-2.5 rounded-xl text-sm font-mono outline-none focus:border-accent/40 t200"/>
+              style={{...inputStyle,fontFamily:"'JetBrains Mono',monospace"}} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
           <div>
-            <label className="text-[11px] text-neutral-500 tracking-widest uppercase block mb-2">Sub-ROL (Predio)</label>
+            <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Sub-ROL (Predio)</label>
             <input type="text" placeholder="ej: 0" value={f.subrol} onChange={e=>setF({...f,subrol:e.target.value})}
-              className="w-full bg-bg border border-bg-border text-white px-4 py-2.5 rounded-xl text-sm font-mono outline-none focus:border-accent/40 t200"/>
+              style={{...inputStyle,fontFamily:"'JetBrains Mono',monospace"}} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
         </div>
-        <div className="mb-4">
-          <label className="text-[11px] text-neutral-500 tracking-widest uppercase block mb-2">Region</label>
+        <div style={{marginBottom:16}}>
+          <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Region</label>
           <select value={f.region} onChange={e=>{const r=e.target.value;const cs=comunasPorRegion[r]||[];setF({...f,region:r,comuna:cs[0]?.nombre||"",codigo_comuna:cs[0]?.codigo||""});}}
-            className="w-full bg-bg border border-bg-border text-white px-4 py-2.5 rounded-xl text-sm outline-none focus:border-accent/40 t200">
+            style={inputStyle}>
             {regiones.map(r=><option key={r.codigo} value={r.codigo}>{r.nombre}</option>)}
           </select>
         </div>
-        <div className="mb-4">
-          <label className="text-[11px] text-neutral-500 tracking-widest uppercase block mb-2">Comuna</label>
+        <div style={{marginBottom:16}}>
+          <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Comuna</label>
           <select value={f.codigo_comuna} onChange={e=>{const sel=comunas.find(c=>c.codigo===e.target.value);setF({...f,codigo_comuna:e.target.value,comuna:sel?.nombre||""});}}
-            className="w-full bg-bg border border-bg-border text-white px-4 py-2.5 rounded-xl text-sm outline-none focus:border-accent/40 t200">
+            style={inputStyle}>
             {comunas.map(c=><option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
           </select>
         </div>
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:28}}>
           <div>
-            <label className="text-[11px] text-neutral-500 tracking-widest uppercase block mb-2">Descripcion</label>
+            <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Descripcion</label>
             <input type="text" placeholder="ej: Casa Norte" value={f.descripcion} onChange={e=>setF({...f,descripcion:e.target.value})}
-              className="w-full bg-bg border border-bg-border text-white px-4 py-2.5 rounded-xl text-sm outline-none focus:border-accent/40 t200"/>
+              style={inputStyle} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
           <div>
-            <label className="text-[11px] text-neutral-500 tracking-widest uppercase block mb-2">Encargado</label>
+            <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Encargado</label>
             <input type="text" placeholder="ej: Juan Perez" value={f.encargado} onChange={e=>setF({...f,encargado:e.target.value})}
-              className="w-full bg-bg border border-bg-border text-white px-4 py-2.5 rounded-xl text-sm outline-none focus:border-accent/40 t200"/>
+              style={inputStyle} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-bg-border text-neutral-500 hover:text-white hover:border-neutral-600 t200 text-sm font-medium">Cancelar</button>
-          <button onClick={()=>{if(f.rol&&f.codigo_comuna){onAdd({...f,id:Date.now()});onClose();}}}
-            className="flex-[2] py-3 rounded-xl bg-accent/10 border border-accent/25 text-accent font-semibold hover:bg-accent/20 t200 text-sm">Agregar</button>
+        <div style={{display:"flex",gap:12}}>
+          <button onClick={onClose} className="t" style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",fontSize:13,fontWeight:500,cursor:"pointer"}}
+            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--text3)";e.currentTarget.style.color="#fff"}}
+            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}>Cancelar</button>
+          <button onClick={()=>{if(f.rol&&f.codigo_comuna){onAdd({...f,id:Date.now()});onClose();}}} className="t"
+            style={{flex:2,padding:"14px",borderRadius:12,background:"var(--green)",border:"none",color:"#000",fontSize:13,fontWeight:700,cursor:"pointer"}}
+            onMouseOver={e=>e.currentTarget.style.opacity="0.85"}
+            onMouseOut={e=>e.currentTarget.style.opacity="1"}>Agregar Propiedad</button>
         </div>
       </div>
     </div>
@@ -337,20 +408,24 @@ function ImportModal({onImport,onClose}){
   };
   useEffect(()=>parse(txt),[]);
   return(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-bg-card border border-bg-border rounded-2xl p-8 w-[560px] shadow-2xl fade-in" onClick={e=>e.stopPropagation()}>
-        <div className="text-lg font-semibold text-white mb-2">Importar CSV</div>
-        <div className="text-sm text-neutral-500 mb-5">Formato: <code className="text-accent/80 font-mono text-xs">ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESC;ENCARGADO</code></div>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}} onClick={onClose}>
+      <div className="fade-in" style={{background:"var(--card)",border:"1px solid var(--border2)",borderRadius:20,padding:36,width:580,boxShadow:"0 25px 50px rgba(0,0,0,0.5)"}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:20,fontWeight:700,color:"#fff",marginBottom:6}}>Importar CSV</div>
+        <div style={{fontSize:12,color:"var(--text3)",marginBottom:20}}>Formato: <code style={{color:"var(--green)",fontFamily:"'JetBrains Mono',monospace",fontSize:11,background:"var(--green-bg)",padding:"2px 8px",borderRadius:6}}>ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESC;ENCARGADO</code></div>
         <textarea value={txt} onChange={e=>{setTxt(e.target.value);parse(e.target.value);}} rows={7}
-          className="w-full bg-bg border border-bg-border text-accent/70 px-4 py-3 rounded-xl font-mono text-[11px] resize-y outline-none focus:border-accent/40 t200"/>
-        {err&&<div className="text-danger text-xs mt-2">{err}</div>}
-        {preview.length>0&&<div className="text-accent text-sm mt-3">{preview.length} propiedades listas para importar</div>}
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-bg-border text-neutral-500 hover:text-white t200 text-sm font-medium">Cancelar</button>
-          <button onClick={()=>{if(preview.length>0){onImport(preview);onClose();}}} disabled={preview.length===0}
-            className={`flex-[2] py-3 rounded-xl font-semibold t200 text-sm border ${preview.length>0?"bg-accent/10 border-accent/25 text-accent hover:bg-accent/20":"bg-bg-hover border-bg-border text-neutral-600 cursor-not-allowed"}`}>
-            Importar {preview.length}
-          </button>
+          style={{width:"100%",background:"var(--bg2)",border:"1px solid var(--border)",color:"var(--green)",padding:"16px",borderRadius:14,fontFamily:"'JetBrains Mono',monospace",fontSize:11,resize:"vertical",outline:"none",lineHeight:1.6,transition:"border 200ms"}}
+          onFocus={e=>e.target.style.borderColor="var(--green-border)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+        {err&&<div style={{color:"var(--red)",fontSize:12,marginTop:10}}>{err}</div>}
+        {preview.length>0&&<div style={{color:"var(--green)",fontSize:13,fontWeight:600,marginTop:12,display:"flex",alignItems:"center",gap:6}}><IconCheck/>{preview.length} propiedades listas para importar</div>}
+        <div style={{display:"flex",gap:12,marginTop:24}}>
+          <button onClick={onClose} className="t" style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",fontSize:13,fontWeight:500,cursor:"pointer"}}
+            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--text3)";e.currentTarget.style.color="#fff"}}
+            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}>Cancelar</button>
+          <button onClick={()=>{if(preview.length>0){onImport(preview);onClose();}}} disabled={preview.length===0} className="t"
+            style={{flex:2,padding:"14px",borderRadius:12,border:"none",fontSize:13,fontWeight:700,cursor:preview.length>0?"pointer":"not-allowed",
+              background:preview.length>0?"var(--green)":"var(--border)",color:preview.length>0?"#000":"var(--text4)"}}
+            onMouseOver={e=>{if(preview.length>0)e.currentTarget.style.opacity="0.85"}}
+            onMouseOut={e=>e.currentTarget.style.opacity="1"}>Importar {preview.length} propiedades</button>
         </div>
       </div>
     </div>
@@ -469,100 +544,123 @@ function App(){
   };
 
   const pct=progreso?Math.round(progreso.actual/progreso.total*100):0;
+  const filterBtnStyle=(active)=>({
+    padding:"8px 18px",borderRadius:10,fontSize:12,fontWeight:active?600:400,cursor:"pointer",transition:"all 200ms",border:"none",
+    background:active?"var(--green)":"transparent",color:active?"#000":"var(--text3)"
+  });
+  const selectStyle={background:"var(--card)",border:"1px solid var(--border)",color:"var(--text2)",padding:"8px 16px",borderRadius:10,fontSize:12,outline:"none",transition:"border 200ms",cursor:"pointer"};
 
   return(
-    <div className="min-h-screen bg-bg">
+    <div style={{minHeight:"100vh",background:"var(--bg)"}}>
+      {/* TOP ACCENT LINE */}
+      <div style={{height:2,background:"linear-gradient(90deg, var(--green) 0%, var(--green) 30%, transparent 100%)"}}/>
+
       {/* HEADER */}
-      <div className="border-b border-bg-border px-6 py-4 flex items-center justify-between bg-bg sticky top-0 z-40">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-accent/8 border border-accent/15 flex items-center justify-center text-accent font-bold text-lg font-mono">C</div>
+      <div style={{borderBottom:"1px solid var(--border)",padding:"20px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bg2)",position:"sticky",top:0,zIndex:40,backdropFilter:"blur(12px)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:16}}>
+          <div style={{width:48,height:48,borderRadius:14,background:"var(--green-bg)",border:"1px solid var(--green-border)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--green)"}}><IconBuilding/></div>
           <div>
-            <div className="text-[17px] font-semibold text-white tracking-wide">Contribuciones <span className="text-accent">CL</span></div>
-            <div className="text-[11px] text-neutral-600 tracking-widest mt-0.5">
-              MONITOR BIENES RAICES
-              {backendOk===true?<span className="text-accent/80 ml-2">EN LINEA</span>:backendOk===false?<span className="text-danger ml-2">DESCONECTADO</span>:<span className="text-neutral-600 ml-2">...</span>}
+            <div style={{fontSize:18,fontWeight:700,color:"#fff",letterSpacing:"-0.02em"}}>Contribuciones <span style={{color:"var(--green)"}}>CL</span></div>
+            <div style={{fontSize:11,color:"var(--text4)",letterSpacing:"0.15em",marginTop:3,display:"flex",alignItems:"center",gap:8}}>
+              MONITOR DE BIENES RAICES
+              {backendOk===true&&<><span style={{width:6,height:6,borderRadius:3,background:"var(--green)",display:"inline-block",boxShadow:"0 0 8px rgba(34,197,94,0.5)"}}/>
+                <span style={{color:"var(--green)",letterSpacing:"0.1em"}}>EN LINEA</span></>}
+              {backendOk===false&&<span style={{color:"var(--red)"}}>DESCONECTADO</span>}
             </div>
           </div>
         </div>
-        <div className="flex gap-2.5">
-          <button onClick={exportarCSV} className="px-4 py-2 rounded-xl border border-bg-border text-neutral-500 hover:text-white hover:border-neutral-600 t200 text-[11px] font-medium tracking-wide">Exportar CSV</button>
-          <button onClick={()=>setShowImport(true)} className="px-4 py-2 rounded-xl border border-bg-border text-neutral-500 hover:text-white hover:border-neutral-600 t200 text-[11px] font-medium tracking-wide">Importar</button>
-          <button onClick={()=>setShowAdd(true)} className="px-5 py-2 rounded-xl bg-accent/10 border border-accent/20 text-accent font-semibold hover:bg-accent/15 t200 text-[11px] tracking-wide">+ Propiedad</button>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={exportarCSV} className="t" style={{padding:"10px 18px",borderRadius:12,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:500}}
+            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.color="#fff"}}
+            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}><IconDownload/> Exportar</button>
+          <button onClick={()=>setShowImport(true)} className="t" style={{padding:"10px 18px",borderRadius:12,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:500}}
+            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.color="#fff"}}
+            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}><IconUpload/> Importar</button>
+          <button onClick={()=>setShowAdd(true)} className="t" style={{padding:"10px 22px",borderRadius:12,background:"var(--green)",border:"none",color:"#000",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:700}}
+            onMouseOver={e=>e.currentTarget.style.opacity="0.85"}
+            onMouseOut={e=>e.currentTarget.style.opacity="1"}><IconPlus/> Propiedad</button>
         </div>
       </div>
 
-      {/* STATS */}
-      <div className="grid grid-cols-5 border-b border-bg-border">
+      {/* STAT CARDS */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:0,borderBottom:"1px solid var(--border)"}}>
         {[
-          {l:"PROPIEDADES",v:props.length,c:"text-white"},
-          {l:"CONSULTADAS",v:consultadas.length,c:"text-info"},
-          {l:"AL DIA",v:alDia.length,c:"text-accent"},
-          {l:"CON DEUDA",v:conDeuda.length,c:conDeuda.length>0?"text-danger":"text-neutral-700"},
-          {l:"DEUDA TOTAL",v:fmt(deudaTotal),c:deudaTotal>0?"text-danger":"text-neutral-700"},
-        ].map(({l,v,c})=>(
-          <div key={l} className="bg-bg px-6 py-5 border-r border-bg-border last:border-r-0">
-            <div className="text-[10px] text-neutral-700 tracking-[0.2em] mb-2">{l}</div>
-            <div className={`text-2xl font-bold font-mono ${c}`}>{v}</div>
+          {l:"PROPIEDADES",v:props.length,color:"#fff",bg:"transparent",icon:null},
+          {l:"CONSULTADAS",v:consultadas.length,color:"var(--blue)",bg:"var(--blue-bg)",icon:null},
+          {l:"AL DIA",v:alDia.length,color:"var(--green)",bg:"var(--green-bg)",icon:null},
+          {l:"CON DEUDA",v:conDeuda.length,color:conDeuda.length>0?"var(--red)":"var(--text4)",bg:conDeuda.length>0?"var(--red-bg)":"transparent",icon:null},
+          {l:"DEUDA TOTAL",v:fmt(deudaTotal),color:deudaTotal>0?"var(--red)":"var(--text4)",bg:deudaTotal>0?"var(--red-bg)":"transparent",icon:null},
+        ].map(({l,v,color,bg},idx)=>(
+          <div key={l} style={{padding:"24px 28px",borderRight:idx<4?"1px solid var(--border)":"none",background:bg}}>
+            <div style={{fontSize:10,color:"var(--text4)",letterSpacing:"0.2em",marginBottom:10}}>{l}</div>
+            <div style={{fontSize:28,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:color,letterSpacing:"-0.03em"}}>{v}</div>
           </div>
         ))}
       </div>
 
-      {/* PROGRESS */}
+      {/* PROGRESS BAR */}
       {progreso&&(
-        <div className="bg-bg-card border-b border-bg-border px-6 py-2.5 flex items-center gap-4">
-          <div className="flex-1 bg-bg-border rounded-full h-1.5 overflow-hidden">
-            <div className="bg-accent h-full t200 rounded-full" style={{width:`${pct}%`}}/>
+        <div style={{padding:"12px 32px",borderBottom:"1px solid var(--border)",background:"var(--card)",display:"flex",alignItems:"center",gap:16}}>
+          <div style={{flex:1,background:"var(--border)",borderRadius:99,height:6,overflow:"hidden"}}>
+            <div style={{background:"var(--green)",height:"100%",borderRadius:99,transition:"width 300ms",width:`${pct}%`,boxShadow:"0 0 10px rgba(34,197,94,0.3)"}}/>
           </div>
-          <span className="text-xs text-neutral-500 font-mono whitespace-nowrap">{progreso.actual}/{progreso.total}</span>
+          <span style={{fontSize:12,color:"var(--text3)",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{progreso.actual}/{progreso.total}</span>
         </div>
       )}
 
       {/* CONTROLS */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-bg-border bg-bg flex-wrap">
-        <div className="flex gap-1 bg-bg-card rounded-xl p-1 border border-bg-border/60">
+      <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 32px",borderBottom:"1px solid var(--border)",flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:2,background:"var(--card)",borderRadius:12,padding:4,border:"1px solid var(--border)"}}>
           {[{k:"todos",l:"Todos"},{k:"sin_consultar",l:"Pendientes"},{k:"deuda",l:"Con Deuda"},{k:"aldia",l:"Al Dia"},{k:"exento",l:"Exentos"}].map(({k,l})=>(
-            <button key={k} onClick={()=>setFiltro(k)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium t200 ${
-                filtro===k?"bg-accent/10 text-accent shadow-sm":"text-neutral-600 hover:text-neutral-400"}`}>{l}</button>
+            <button key={k} onClick={()=>setFiltro(k)} style={filterBtnStyle(filtro===k)}
+              onMouseOver={e=>{if(filtro!==k)e.currentTarget.style.color="var(--text2)"}}
+              onMouseOut={e=>{if(filtro!==k)e.currentTarget.style.color="var(--text3)"}}>{l}</button>
           ))}
         </div>
         {comunasUnicas.length>1&&(
-          <select value={filtroComuna} onChange={e=>setFiltroComuna(e.target.value)}
-            className="bg-bg border border-bg-border text-neutral-400 px-3 py-1.5 rounded-xl text-[11px] outline-none focus:border-accent/30 t200">
+          <select value={filtroComuna} onChange={e=>setFiltroComuna(e.target.value)} style={selectStyle}
+            onFocus={e=>e.target.style.borderColor="var(--green-border)"} onBlur={e=>e.target.style.borderColor="var(--border)"}>
             <option value="">Todas las comunas</option>
             {comunasUnicas.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         )}
         {encargadosUnicos.length>1&&(
-          <select value={filtroEncargado} onChange={e=>setFiltroEncargado(e.target.value)}
-            className="bg-bg border border-bg-border text-neutral-400 px-3 py-1.5 rounded-xl text-[11px] outline-none focus:border-accent/30 t200">
+          <select value={filtroEncargado} onChange={e=>setFiltroEncargado(e.target.value)} style={selectStyle}
+            onFocus={e=>e.target.style.borderColor="var(--green-border)"} onBlur={e=>e.target.style.borderColor="var(--border)"}>
             <option value="">Todos los encargados</option>
             {encargadosUnicos.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         )}
-        <input type="text" placeholder="Buscar ROL, comuna, encargado..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}
-          className="flex-1 min-w-[180px] bg-bg border border-bg-border text-neutral-300 px-4 py-1.5 rounded-xl text-xs outline-none focus:border-accent/30 t200 placeholder:text-neutral-700"/>
-        <button onClick={consultarTodo} disabled={consultandoTodo||props.length===0}
-          className={`px-5 py-2 rounded-xl text-[11px] font-semibold tracking-wide t200 border whitespace-nowrap ${
-            consultandoTodo?"border-bg-border text-neutral-600 cursor-not-allowed":"bg-accent/10 border-accent/20 text-accent hover:bg-accent/15"}`}
-          style={consultandoTodo?{animation:"pulse 1.5s infinite"}:{}}>
-          {consultandoTodo?`Consultando ${progreso?.actual||""}/${progreso?.total||""}...`:`Consultar Todo (${props.length})`}
+        <div style={{flex:1,minWidth:180,position:"relative"}}>
+          <div style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:"var(--text4)"}}><IconSearch/></div>
+          <input type="text" placeholder="Buscar ROL, comuna, encargado..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}
+            style={{width:"100%",background:"var(--card)",border:"1px solid var(--border)",color:"var(--text2)",padding:"8px 16px 8px 38px",borderRadius:10,fontSize:12,outline:"none",transition:"border 200ms"}}
+            onFocus={e=>e.target.style.borderColor="var(--green-border)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+        </div>
+        <button onClick={consultarTodo} disabled={consultandoTodo||props.length===0} className="t"
+          style={{padding:"10px 24px",borderRadius:12,fontSize:12,fontWeight:700,cursor:consultandoTodo?"not-allowed":"pointer",border:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8,
+            background:consultandoTodo?"var(--card)":"var(--green)",color:consultandoTodo?"var(--text4)":"#000"}}
+          {...(consultandoTodo?{style:{...{padding:"10px 24px",borderRadius:12,fontSize:12,fontWeight:700,cursor:"not-allowed",border:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8,background:"var(--card)",color:"var(--text4)"},animation:"pulse 1.5s infinite"}}:{})}>
+          <IconRefresh/>
+          {consultandoTodo?`${progreso?.actual||0}/${progreso?.total||0}`:`Consultar Todo (${props.length})`}
         </button>
       </div>
 
       {/* TABLE HEADER */}
-      <div className={`${GRID} px-5 py-3 gap-4 border-b border-bg-border bg-bg`}>
-        {["Propiedad","Comuna","Encargado","Propietario","Deuda","Estado",""].map((h,i)=>(
-          <div key={i} className={`text-[10px] text-neutral-600 tracking-[0.15em] uppercase font-medium ${i>=3&&i<=5?"text-center":""}`}>{h}</div>
+      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1.1fr 0.9fr 0.8fr 1fr auto",padding:"12px 28px 12px 48px",borderBottom:"1px solid var(--border)",background:"var(--bg)"}}>
+        {["","Propiedad","Comuna","Encargado","Propietario","Deuda / Estado",""].map((h,i)=>(
+          <div key={i} style={{fontSize:10,color:"var(--text4)",letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:500,
+            textAlign:i===5?"center":i===6?"right":"left"}}>{h}</div>
         ))}
       </div>
 
       {/* LIST */}
-      <div>
+      <div style={{padding:"12px 0 40px"}}>
         {pf.length===0?(
-          <div className="py-20 text-center">
-            <div className="text-5xl mb-4 opacity-10">--</div>
-            <div className="text-sm text-neutral-600">{props.length===0?"Agrega propiedades para comenzar":"Sin resultados para los filtros seleccionados"}</div>
+          <div style={{padding:"80px 0",textAlign:"center"}}>
+            <div style={{width:64,height:64,borderRadius:20,background:"var(--card)",border:"1px solid var(--border)",display:"inline-flex",alignItems:"center",justifyContent:"center",color:"var(--text4)",marginBottom:20}}><IconBuilding/></div>
+            <div style={{fontSize:14,color:"var(--text3)",fontWeight:500}}>{props.length===0?"Agrega propiedades para comenzar":"Sin resultados para los filtros seleccionados"}</div>
+            <div style={{fontSize:12,color:"var(--text4)",marginTop:8}}>{props.length===0?'Usa el boton "+ Propiedad" o "Importar"':"Intenta cambiar los filtros"}</div>
           </div>
         ):pf.map(prop=>(
           <PropertyRow key={prop.id} prop={prop} onConsultar={consultar}
@@ -574,11 +672,9 @@ function App(){
       </div>
 
       {/* FOOTER */}
-      <div className="border-t border-bg-border px-6 py-4 flex justify-between bg-bg mt-8">
-        <div className="text-[11px] text-neutral-800">
-          Contribuciones CL | {backendOk?"Conectado":"Desconectado"}
-        </div>
-        <div className="text-[11px] text-neutral-800 font-mono">{pf.length} de {props.length} propiedades</div>
+      <div style={{borderTop:"1px solid var(--border)",padding:"16px 32px",display:"flex",justifyContent:"space-between",background:"var(--bg)"}}>
+        <div style={{fontSize:11,color:"var(--text4)"}}>Contribuciones CL &middot; {backendOk?"Conectado":"Desconectado"}</div>
+        <div style={{fontSize:11,color:"var(--text4)",fontFamily:"'JetBrains Mono',monospace"}}>{pf.length} de {props.length} propiedades</div>
       </div>
 
       {showAdd&&<AddModal regiones={regiones} comunasPorRegion={comunasPorRegion} onAdd={p=>setProps(prev=>[...prev,p])} onClose={()=>setShowAdd(false)}/>}
