@@ -1,0 +1,22 @@
+{
+  "config": {
+    "email_destino": "tu-email@gmail.com",
+    "umbral_deuda": 500000,
+    "umbral_cuotas_vencidas": 2,
+    "notificar_cambios_estado": true
+  },
+  "propiedades": [
+    {
+      "rol": "13",
+      "subrol": "1",
+      "codigo_comuna": "9201",
+      "descripcion": "Local Comercial Temuco"
+    },
+    {
+      "rol": "1",
+      "subrol": "1",
+      "codigo_comuna": "9201",
+      "descripcion": "Vivienda Balmaceda Temuco"
+    }
+  ]
+}

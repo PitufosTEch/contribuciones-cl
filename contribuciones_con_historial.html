@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contribuciones CL v3</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        bg: { DEFAULT:'#0a0a0a', card:'#111111', hover:'#171717', border:'#262626', muted:'#404040' },
+        accent: { DEFAULT:'#22c55e', dim:'#166534', glow:'#22c55e22' },
+        danger: { DEFAULT:'#ef4444', dim:'#7f1d1d' },
+        warn: { DEFAULT:'#f59e0b', dim:'#78350f' },
+        info: { DEFAULT:'#3b82f6', dim:'#1e3a5f' },
+      },
+      fontFamily: { sans:['Inter','sans-serif'], mono:['JetBrains Mono','monospace'] },
+    }
+  }
+}
+</script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;color:#fafafa;font-family:'Inter',sans-serif;min-height:100vh}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#262626;border-radius:3px}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .fade-in{animation:fadeIn 0.2s ease}
+  .slide-in{animation:slideIn 0.25s ease}
+  .t200{transition:all 200ms ease}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useCallback,useEffect,useRef}=React;
+
+// -- CONFIG -------------------------------------------------------------------
+const API="http://localhost:5000";
+const DEMO_MODE=false;
+
+// -- UTILS --------------------------------------------------------------------
+const fmt=n=>n===0||!n?"$0":`$${n.toLocaleString("es-CL")}`;
+const EC={pagada:"#22c55e",pendiente:"#f59e0b",vencida:"#ef4444",exento:"#6b7280",sin_datos:"#404040"};
+const EL={pagada:"Pagada",pendiente:"Pendiente",vencida:"Vencida",exento:"Exento",sin_datos:"Sin datos"};
+
+function Badge({estado,small}){
+  const bg=EC[estado]||"#404040";
+  const cls=small?"px-1.5 py-0.5 text-[9px]":"px-2 py-0.5 text-[10px]";
+  return <span className={`${cls} rounded font-mono font-semibold tracking-wide inline-block t200`}
+    style={{background:bg+"18",color:bg,border:`1px solid ${bg}35`}}>{EL[estado]||estado}</span>;
+}
+
+// -- HISTORIAL PANEL ----------------------------------------------------------
+function HistorialPanel({prop,onClose}){
+  const[historial,setHistorial]=useState([]);
+  const[loading,setLoading]=useState(true);
+  useEffect(()=>{
+    if(!prop.propiedad_id){setHistorial(prop._historialLocal||[]);setLoading(false);return;}
+    fetch(`${API}/historial/${prop.propiedad_id}`)
+      .then(r=>r.json()).then(d=>{setHistorial(d.historial||[]);setLoading(false);})
+      .catch(()=>{setHistorial(prop._historialLocal||[]);setLoading(false);});
+  },[prop]);
+
+  return(
+    <div className="fixed inset-0 bg-black/70 z-50 flex justify-end" onClick={onClose}>
+      <div className="w-[540px] bg-bg-card border-l border-bg-border h-full overflow-y-auto slide-in" onClick={e=>e.stopPropagation()}>
+        <div className="p-5 border-b border-bg-border bg-bg sticky top-0 z-10 flex justify-between items-center">
+          <div>
+            <div className="text-sm font-semibold text-white">Historial de Consultas</div>
+            <div className="text-xs text-bg-muted font-mono mt-1">ROL {prop.rol}-{prop.subrol} | {prop.comuna}</div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg border border-bg-border text-bg-muted hover:text-white hover:border-white/20 t200 flex items-center justify-center text-lg">&times;</button>
+        </div>
+
+        {loading?(
+          <div className="p-12 text-center text-bg-muted" style={{animation:"pulse 1.5s infinite"}}>Cargando historial...</div>
+        ):historial.length===0?(
+          <div className="p-12 text-center text-bg-muted">
+            <div className="text-3xl mb-3 opacity-30">---</div>
+            <div className="text-sm">Sin consultas anteriores.</div>
+            <div className="text-xs text-bg-border mt-2">El historial se construye con cada consulta.</div>
+          </div>
+        ):(
+          <div className="p-5">
+            {historial.some(h=>h.cambios?.length>0)&&(
+              <div className="bg-info-dim/20 border border-info/20 rounded-lg p-4 mb-4">
+                <div className="text-[10px] text-info tracking-widest uppercase mb-2 font-semibold">Cambios Detectados</div>
+                {historial.flatMap(h=>h.cambios||[]).map((c,i)=>(
+                  <div key={i} className="flex items-center gap-2 mb-1 text-xs">
+                    {c.tipo==="pago_registrado"?(
+                      <span className="text-accent">Pago registrado: {fmt(c.monto_pagado)}</span>
+                    ):(<>
+                      <span className="text-neutral-400">{c.nombre}</span>
+                      <Badge estado={c.de} small/><span className="text-bg-muted">-&gt;</span><Badge estado={c.a} small/>
+                    </>)}
+                    <span className="text-bg-border text-[10px] ml-auto">{c.fecha?.slice(0,10)||""}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="text-[10px] text-bg-muted tracking-widest uppercase mb-3">{historial.length} consulta{historial.length!==1?"s":""}</div>
+            {historial.map((h,idx)=>(
+              <div key={h.id||idx} className="flex gap-3 mb-4">
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <div className={`w-2.5 h-2.5 rounded-full mt-1.5 ${idx===0?"bg-accent border-2 border-accent-dim":"bg-bg-border"}`}/>
+                  {idx<historial.length-1&&<div className="w-px flex-1 bg-bg-border mt-1"/>}
+                </div>
+                <div className={`flex-1 bg-bg border border-bg-border rounded-lg p-3 ${idx===0?"fade-in":""}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      {idx===0&&<div className="text-[10px] text-accent font-medium mb-0.5">Ultima consulta</div>}
+                      <div className="text-[11px] text-bg-muted">{h.fecha_consulta?.replace("T"," ").slice(0,16)||"--"}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-mono text-sm font-bold ${h.deuda_total>0?"text-danger":"text-accent"}`}>
+                        {h.deuda_total>0?fmt(h.deuda_total):"Al dia"}
+                      </div>
+                      {h.direccion&&<div className="text-[10px] text-bg-muted mt-0.5">{h.direccion}</div>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(h.cuotas||[]).map(c=>(
+                      <div key={c.numero} className="bg-bg-card border rounded p-2 text-center" style={{borderColor:(EC[c.estado]||"#262626")+"30"}}>
+                        <div className="text-[9px] text-bg-muted mb-1">C{c.numero}</div>
+                        <Badge estado={c.estado} small/>
+                        {c.monto>0&&<div className="text-[9px] text-neutral-400 font-mono mt-1">{fmt(c.monto)}</div>}
+                      </div>
+                    ))}
+                  </div>
+                  {h.cambios?.length>0&&(
+                    <div className="mt-2 pt-2 border-t border-bg-border">
+                      {h.cambios.map((c,i)=>(
+                        <div key={i} className="text-[11px] text-warn">
+                          {c.tipo==="pago_registrado"?`Pago detectado: ${fmt(c.monto_pagado)}`:`${c.nombre}: ${c.de} -> ${c.a}`}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -- PROPERTY ROW -------------------------------------------------------------
+function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerHistorial}){
+  const[expanded,setExpanded]=useState(false);
+  const hasDebt=resultado?.deuda_total>0;
+  const tieneHistorial=(prop._historialLocal?.length||0)>1||(prop.propiedad_id&&resultado);
+  const hayCambios=resultado?.cambios?.length>0;
+
+  return(
+    <div className="border-b border-bg-border/50">
+      <div className={`grid grid-cols-[2.2fr_1.6fr_1fr_1.2fr_1fr_auto] items-center px-4 py-3 gap-3 t200 cursor-pointer ${expanded?"bg-bg-hover":"hover:bg-bg-hover/50"}`}
+        onClick={()=>resultado&&setExpanded(!expanded)}>
+        <div>
+          <div className="font-mono text-sm font-semibold text-white flex items-center gap-2">
+            {prop.rol}-{prop.subrol}
+            {hayCambios&&<span className="px-1.5 py-0.5 rounded text-[9px] font-semibold tracking-wide bg-warn/10 text-warn border border-warn/30">CAMBIO</span>}
+          </div>
+          <div className="text-xs text-neutral-500 mt-0.5">{prop.descripcion||resultado?.direccion||"--"}</div>
+        </div>
+        <div>
+          <div className="text-xs text-neutral-300">{prop.comuna||resultado?.comuna_descripcion||""}</div>
+          <div className="text-[10px] text-neutral-600 mt-0.5">{resultado?.destino||""}</div>
+        </div>
+        {resultado?(<>
+          <div className="text-right font-mono text-xs text-neutral-400">{resultado.propietario?.slice(0,25)||"--"}</div>
+          <div className={`text-center font-mono font-bold text-sm ${hasDebt?"text-danger":"text-accent"}`}>
+            {hasDebt?fmt(resultado.deuda_total):"Al dia"}
+          </div>
+          <div className="text-center">
+            <span className="text-[11px] text-neutral-500 bg-bg-hover px-2 py-0.5 rounded font-mono">
+              {resultado.exento?"EXENTO":`${resultado.cuotas.filter(c=>c.estado==="pagada").length}/4`}
+            </span>
+          </div>
+        </>):(<>
+          <div className="text-neutral-700 text-right">--</div>
+          <div className="text-neutral-700 text-center">--</div>
+          <div className="text-neutral-700 text-center">--</div>
+        </>)}
+        <div className="flex gap-1.5 items-center">
+          <button onClick={e=>{e.stopPropagation();onConsultar(prop);}} disabled={loading}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide t200 border ${
+              loading?"bg-bg-hover border-bg-border text-neutral-600 cursor-not-allowed":
+              resultado?"bg-bg-card border-bg-border text-accent hover:border-accent/40":
+              "bg-accent-dim/30 border-accent/30 text-accent hover:bg-accent-dim/50"}`}>
+            {loading?"...":resultado?"ACT":"CONSULTAR"}
+          </button>
+          {tieneHistorial&&(
+            <button onClick={e=>{e.stopPropagation();onVerHistorial(prop);}} title="Ver historial"
+              className="px-2 py-1.5 rounded-lg border border-bg-border text-neutral-500 hover:text-info hover:border-info/30 t200 text-[11px]">H</button>
+          )}
+          <button onClick={e=>{e.stopPropagation();onDelete(prop.id);}} title="Eliminar"
+            className="w-7 h-7 rounded-lg border border-bg-border text-neutral-700 hover:text-danger hover:border-danger/30 t200 flex items-center justify-center text-sm">&times;</button>
+        </div>
+      </div>
+
+      {expanded&&resultado&&(
+        <div className="bg-bg border-t border-bg-border p-5 fade-in">
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            {[
+              {l:"Direccion",v:resultado.direccion||"--"},
+              {l:"Propietario",v:resultado.propietario||"--"},
+              {l:"Destino",v:resultado.destino||"--"},
+              {l:"Deuda Total",v:fmt(resultado.deuda_total),hi:resultado.deuda_total>0},
+            ].map(({l,v,hi})=>(
+              <div key={l} className="bg-bg-card border border-bg-border rounded-lg p-3">
+                <div className="text-[9px] text-neutral-600 tracking-widest uppercase mb-1.5">{l}</div>
+                <div className={`font-mono text-sm font-semibold ${hi?"text-danger":"text-neutral-200"} truncate`} title={v}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {resultado.cuotas.map(c=>(
+              <div key={c.numero} className="bg-bg-card border rounded-lg p-3" style={{borderColor:(EC[c.estado]||"#262626")+"30"}}>
+                <div className="flex justify-between items-start mb-2">
+                  <div className="text-[11px] text-neutral-500 leading-tight">{c.nombre}</div>
+                  <Badge estado={c.estado}/>
+                </div>
+                <div className="font-mono text-lg font-bold text-white">{fmt(c.total_pago||c.monto)}</div>
+                {c.monto>0&&c.total_pago!==c.monto&&(
+                  <div className="text-[10px] text-neutral-600 font-mono mt-1">Base: {fmt(c.monto)}</div>
+                )}
+                {c.intereses>0&&<div className="text-[10px] text-danger/70 font-mono">Int: {fmt(c.intereses)}</div>}
+                {c.reajustes>0&&<div className="text-[10px] text-warn/70 font-mono">Reaj: {fmt(c.reajustes)}</div>}
+                <div className="text-[10px] text-neutral-700 mt-1.5">Vto: {c.vencimiento||"--"}</div>
+              </div>
+            ))}
+          </div>
+          {resultado.cambios?.length>0&&(
+            <div className="mt-3 p-3 bg-warn/5 border border-warn/20 rounded-lg">
+              <div className="text-[10px] text-warn tracking-widest mb-1.5 font-semibold">CAMBIOS VS CONSULTA ANTERIOR</div>
+              {resultado.cambios.map((c,i)=>(
+                <div key={i} className="text-xs text-neutral-300">
+                  {c.tipo==="pago_registrado"?`Pago registrado: ${fmt(c.monto_pagado)}`:`${c.nombre}: ${c.de} -> ${c.a}`}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 flex justify-between text-[10px] text-neutral-700">
+            <span>{resultado.fuente}</span>
+            <span>{resultado.ultima_actualizacion?new Date(resultado.ultima_actualizacion).toLocaleString("es-CL"):""}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// -- ADD MODAL ----------------------------------------------------------------
+function AddModal({regiones,comunasPorRegion,onAdd,onClose}){
+  const defaultReg=regiones.length>0?regiones.find(r=>r.codigo==="9")?.codigo||regiones[0].codigo:"9";
+  const[f,setF]=useState({rol:"",subrol:"0",region:defaultReg,comuna:"",codigo_comuna:"",descripcion:""});
+  const comunas=comunasPorRegion[f.region]||[];
+
+  useEffect(()=>{
+    if(comunas.length>0&&!f.codigo_comuna){
+      setF(prev=>({...prev,comuna:comunas[0].nombre,codigo_comuna:comunas[0].codigo}));
+    }
+  },[f.region,comunas.length]);
+
+  return(
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-bg-card border border-bg-border rounded-xl p-7 w-[460px] shadow-2xl fade-in" onClick={e=>e.stopPropagation()}>
+        <div className="text-base font-semibold text-white mb-5 tracking-wide">Agregar Propiedad</div>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label className="text-[10px] text-neutral-500 tracking-widest uppercase block mb-1.5">ROL (Manzana) *</label>
+            <input type="text" placeholder="ej: 3456" value={f.rol} onChange={e=>setF({...f,rol:e.target.value})}
+              className="w-full bg-bg border border-bg-border text-white px-3 py-2 rounded-lg text-sm font-mono outline-none focus:border-accent/50 t200"/>
+          </div>
+          <div>
+            <label className="text-[10px] text-neutral-500 tracking-widest uppercase block mb-1.5">Sub-ROL (Predio)</label>
+            <input type="text" placeholder="ej: 0" value={f.subrol} onChange={e=>setF({...f,subrol:e.target.value})}
+              className="w-full bg-bg border border-bg-border text-white px-3 py-2 rounded-lg text-sm font-mono outline-none focus:border-accent/50 t200"/>
+          </div>
+        </div>
+        <div className="mb-3">
+          <label className="text-[10px] text-neutral-500 tracking-widest uppercase block mb-1.5">Region</label>
+          <select value={f.region} onChange={e=>{const r=e.target.value;const cs=comunasPorRegion[r]||[];setF({...f,region:r,comuna:cs[0]?.nombre||"",codigo_comuna:cs[0]?.codigo||""});}}
+            className="w-full bg-bg border border-bg-border text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-accent/50 t200">
+            {regiones.map(r=><option key={r.codigo} value={r.codigo}>{r.nombre}</option>)}
+          </select>
+        </div>
+        <div className="mb-3">
+          <label className="text-[10px] text-neutral-500 tracking-widest uppercase block mb-1.5">Comuna</label>
+          <select value={f.codigo_comuna} onChange={e=>{const sel=comunas.find(c=>c.codigo===e.target.value);setF({...f,codigo_comuna:e.target.value,comuna:sel?.nombre||""});}}
+            className="w-full bg-bg border border-bg-border text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-accent/50 t200">
+            {comunas.map(c=><option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
+          </select>
+        </div>
+        <div className="mb-5">
+          <label className="text-[10px] text-neutral-500 tracking-widest uppercase block mb-1.5">Descripcion</label>
+          <input type="text" placeholder="ej: Casa Temuco Norte" value={f.descripcion} onChange={e=>setF({...f,descripcion:e.target.value})}
+            className="w-full bg-bg border border-bg-border text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-accent/50 t200"/>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-bg-border text-neutral-500 hover:text-white hover:border-neutral-600 t200 text-sm">Cancelar</button>
+          <button onClick={()=>{if(f.rol&&f.codigo_comuna){onAdd({...f,id:Date.now()});onClose();}}}
+            className="flex-[2] py-2.5 rounded-lg bg-accent/10 border border-accent/30 text-accent font-semibold hover:bg-accent/20 t200 text-sm">Agregar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -- IMPORT MODAL -------------------------------------------------------------
+function ImportModal({onImport,onClose}){
+  const[txt,setTxt]=useState("ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESCRIPCION\n13;1;9201;TEMUCO;Local Comercial\n500;3;9201;TEMUCO;Vivienda Norte");
+  const[preview,setPreview]=useState([]);
+  const[err,setErr]=useState("");
+  const parse=raw=>{
+    try{
+      const p=raw.trim().split("\n").slice(1).filter(l=>l.trim()).map((l,i)=>{
+        const ps=l.split(";");
+        if(ps.length<3)throw new Error(`Linea ${i+2}: minimo 3 columnas`)
+        return{id:Date.now()+i,rol:ps[0].trim(),subrol:ps[1].trim()||"0",codigo_comuna:ps[2].trim(),region:"",comuna:ps[3]?.trim()||"",descripcion:ps[4]?.trim()||""};
+      });
+      setPreview(p);setErr("");
+    }catch(e){setErr(e.message);setPreview([]);}
+  };
+  useEffect(()=>parse(txt),[]);
+  return(
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-bg-card border border-bg-border rounded-xl p-7 w-[560px] shadow-2xl fade-in" onClick={e=>e.stopPropagation()}>
+        <div className="text-base font-semibold text-white mb-1.5 tracking-wide">Importar CSV</div>
+        <div className="text-xs text-neutral-500 mb-4">Formato: <code className="text-accent font-mono">ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESCRIPCION</code></div>
+        <textarea value={txt} onChange={e=>{setTxt(e.target.value);parse(e.target.value);}} rows={7}
+          className="w-full bg-bg border border-bg-border text-accent/80 px-3 py-2.5 rounded-lg font-mono text-[11px] resize-y outline-none focus:border-accent/40 t200"/>
+        {err&&<div className="text-danger text-xs mt-2">{err}</div>}
+        {preview.length>0&&<div className="text-accent text-xs mt-2">{preview.length} propiedades listas</div>}
+        <div className="flex gap-3 mt-4">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-bg-border text-neutral-500 hover:text-white t200 text-sm">Cancelar</button>
+          <button onClick={()=>{if(preview.length>0){onImport(preview);onClose();}}} disabled={preview.length===0}
+            className={`flex-[2] py-2.5 rounded-lg font-semibold t200 text-sm border ${preview.length>0?"bg-accent/10 border-accent/30 text-accent hover:bg-accent/20 cursor-pointer":"bg-bg-hover border-bg-border text-neutral-600 cursor-not-allowed"}`}>
+            Importar {preview.length} propiedades
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -- APP ----------------------------------------------------------------------
+function App(){
+  const[props,setProps]=useState([]);
+  const[resultados,setResultados]=useState({});
+  const[loadingIds,setLoadingIds]=useState(new Set());
+  const[showAdd,setShowAdd]=useState(false);
+  const[showImport,setShowImport]=useState(false);
+  const[consultandoTodo,setConsultandoTodo]=useState(false);
+  const[filtro,setFiltro]=useState("todos");
+  const[busqueda,setBusqueda]=useState("");
+  const[progreso,setProgreso]=useState(null);
+  const[historialProp,setHistorialProp]=useState(null);
+  const[backendOk,setBackendOk]=useState(null);
+  const[regiones,setRegiones]=useState([]);
+  const[comunasPorRegion,setComunasPorRegion]=useState({});
+  const[sortCol,setSortCol]=useState(null);
+  const[sortDir,setSortDir]=useState("asc");
+
+  // Cargar regiones y comunas del backend
+  useEffect(()=>{
+    fetch(`${API}/health`).then(r=>r.json()).then(()=>{
+      setBackendOk(true);
+      fetch(`${API}/regiones`).then(r=>r.json()).then(setRegiones).catch(()=>{});
+      fetch(`${API}/comunas`).then(r=>r.json()).then(data=>{
+        const byReg={};
+        data.forEach(c=>{if(!byReg[c.region])byReg[c.region]=[];byReg[c.region].push(c);});
+        setComunasPorRegion(byReg);
+      }).catch(()=>{});
+      // Cargar propiedades guardadas del backend
+      fetch(`${API}/propiedades`).then(r=>r.json()).then(savedProps=>{
+        if(savedProps.length>0){
+          const mapped=savedProps.map(p=>({id:p.id,rol:p.rol,subrol:p.subrol,region:p.region_code,
+            comuna:p.comuna,codigo_comuna:p.codigo_comuna,descripcion:p.descripcion,propiedad_id:p.id}));
+          setProps(mapped);
+        }
+      }).catch(()=>{});
+    }).catch(()=>setBackendOk(false));
+  },[]);
+
+  const consultar=useCallback(async prop=>{
+    setLoadingIds(p=>new Set([...p,prop.id]));
+    let resultado;
+    if(backendOk===true){
+      try{
+        const params=new URLSearchParams({
+          rol:prop.rol,subrol:prop.subrol,comuna:prop.comuna||"",
+          codigo_comuna:prop.codigo_comuna||"",region:prop.region||"",
+          descripcion:prop.descripcion||"",
+          ...(DEMO_MODE?{demo:"true"}:{})
+        });
+        const r=await fetch(`${API}/consultar?${params}`);
+        resultado=await r.json();
+        if(resultado.propiedad_id){
+          setProps(prev=>prev.map(p=>p.id===prop.id?{...p,propiedad_id:resultado.propiedad_id}:p));
+        }
+      }catch(e){resultado={error:"Error de conexion: "+e.message};}
+    }else{
+      resultado={error:"Backend no disponible"};
+    }
+    if(!resultado.error){
+      setResultados(p=>({...p,[prop.id]:resultado}));
+    }
+    setLoadingIds(p=>{const s=new Set(p);s.delete(prop.id);return s;});
+  },[backendOk]);
+
+  const consultarTodo=async()=>{
+    setConsultandoTodo(true);
+    for(let i=0;i<props.length;i++){
+      setProgreso({actual:i+1,total:props.length});
+      await consultar(props[i]);
+    }
+    setConsultandoTodo(false);setProgreso(null);
+  };
+
+  const consultadas=props.filter(p=>resultados[p.id]);
+  const conDeuda=consultadas.filter(p=>resultados[p.id]?.deuda_total>0);
+  const alDia=consultadas.filter(p=>resultados[p.id]?.deuda_total===0&&!resultados[p.id]?.exento);
+  const deudaTotal=conDeuda.reduce((s,p)=>s+resultados[p.id].deuda_total,0);
+
+  const pf=props.filter(p=>{
+    const r=resultados[p.id];
+    const mf=filtro==="todos"?true:filtro==="deuda"?r?.deuda_total>0:filtro==="aldia"?(r?.deuda_total===0&&!r?.exento):filtro==="exento"?r?.exento:!r;
+    const mb=busqueda===""||p.rol.includes(busqueda)||(p.comuna||"").toLowerCase().includes(busqueda.toLowerCase())||(p.descripcion||"").toLowerCase().includes(busqueda.toLowerCase())||(r?.direccion||"").toLowerCase().includes(busqueda.toLowerCase());
+    return mf&&mb;
+  });
+
+  const exportarCSV=()=>{
+    const rows=[["ROL","SUBROL","CODIGO_COMUNA","COMUNA","DESCRIPCION","DIRECCION","PROPIETARIO","DESTINO","DEUDA_TOTAL","C1","C2","C3","C4","ESTADO","ULTIMA_CONSULTA"]];
+    props.forEach(p=>{
+      const r=resultados[p.id];
+      const cs=r?.cuotas||[];
+      rows.push([p.rol,p.subrol,p.codigo_comuna||"",p.comuna||"",p.descripcion||"",
+        r?.direccion||"",r?.propietario||"",r?.destino||"",r?.deuda_total||"",
+        ...Array.from({length:4},(_,i)=>cs[i]?.estado||""),
+        r?(r.exento?"Exento":r.deuda_total>0?"Con Deuda":"Al Dia"):"Sin Consultar",
+        r?.ultima_actualizacion?.slice(0,16)||""]);
+    });
+    const blob=new Blob(["\uFEFF"+rows.map(r=>r.join(";")).join("\n")],{type:"text/csv;charset=utf-8;"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    a.download=`contribuciones_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+  };
+
+  const pct=progreso?Math.round(progreso.actual/progreso.total*100):0;
+
+  return(
+    <div className="min-h-screen bg-bg">
+      {/* HEADER */}
+      <div className="border-b border-bg-border px-5 py-3.5 flex items-center justify-between bg-bg sticky top-0 z-40">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent font-bold text-lg font-mono">C</div>
+          <div>
+            <div className="text-base font-semibold text-white tracking-wide">Contribuciones <span className="text-accent">CL</span></div>
+            <div className="text-[10px] text-neutral-600 tracking-widest mt-0.5">
+              MONITOR BIENES RAICES | SII
+              {backendOk===true?<span className="text-accent ml-2">CONECTADO</span>:backendOk===false?<span className="text-danger ml-2">SIN BACKEND</span>:<span className="text-neutral-600 ml-2">VERIFICANDO...</span>}
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={exportarCSV} className="px-3 py-1.5 rounded-lg border border-bg-border text-neutral-500 hover:text-white hover:border-neutral-600 t200 text-[11px] tracking-wide">CSV</button>
+          <button onClick={()=>setShowImport(true)} className="px-3 py-1.5 rounded-lg border border-bg-border text-neutral-500 hover:text-white hover:border-neutral-600 t200 text-[11px] tracking-wide">IMPORTAR</button>
+          <button onClick={()=>setShowAdd(true)} className="px-4 py-1.5 rounded-lg bg-accent/10 border border-accent/30 text-accent font-semibold hover:bg-accent/20 t200 text-[11px] tracking-wide">+ PROPIEDAD</button>
+        </div>
+      </div>
+
+      {/* STATS */}
+      <div className="grid grid-cols-5 border-b border-bg-border">
+        {[
+          {l:"TOTAL",v:props.length,c:"text-white"},
+          {l:"CONSULTADAS",v:consultadas.length,c:"text-info"},
+          {l:"AL DIA",v:alDia.length,c:"text-accent"},
+          {l:"CON DEUDA",v:conDeuda.length,c:conDeuda.length>0?"text-danger":"text-neutral-700"},
+          {l:"DEUDA TOTAL",v:fmt(deudaTotal),c:deudaTotal>0?"text-danger":"text-neutral-700"},
+        ].map(({l,v,c})=>(
+          <div key={l} className="bg-bg px-5 py-3.5 border-r border-bg-border last:border-r-0">
+            <div className="text-[9px] text-neutral-700 tracking-[0.2em] mb-1.5">{l}</div>
+            <div className={`text-2xl font-bold font-mono ${c}`}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* PROGRESS */}
+      {progreso&&(
+        <div className="bg-bg-card border-b border-bg-border px-5 py-2 flex items-center gap-4">
+          <div className="flex-1 bg-bg-border rounded-full h-1 overflow-hidden">
+            <div className="bg-accent h-full t200" style={{width:`${pct}%`}}/>
+          </div>
+          <span className="text-xs text-neutral-500 font-mono whitespace-nowrap">{progreso.actual}/{progreso.total} | {pct}%</span>
+        </div>
+      )}
+
+      {/* CONTROLS */}
+      <div className="flex items-center gap-3 px-5 py-2.5 border-b border-bg-border bg-bg flex-wrap">
+        <div className="flex gap-1">
+          {[{k:"todos",l:"Todos"},{k:"sin_consultar",l:"Pendientes"},{k:"deuda",l:"Con Deuda"},{k:"aldia",l:"Al Dia"},{k:"exento",l:"Exentos"}].map(({k,l})=>(
+            <button key={k} onClick={()=>setFiltro(k)}
+              className={`px-2.5 py-1 rounded-md text-[10px] font-semibold tracking-wide t200 border ${
+                filtro===k?"bg-accent/10 border-accent/30 text-accent":"border-transparent text-neutral-600 hover:text-neutral-400"}`}>{l}</button>
+          ))}
+        </div>
+        <input type="text" placeholder="Buscar ROL, comuna, direccion..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}
+          className="flex-1 min-w-[200px] bg-bg border border-bg-border text-neutral-300 px-3 py-1.5 rounded-lg text-xs outline-none focus:border-accent/40 t200"/>
+        <button onClick={consultarTodo} disabled={consultandoTodo||props.length===0}
+          className={`px-4 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide t200 border whitespace-nowrap ${
+            consultandoTodo?"border-bg-border text-neutral-600 cursor-not-allowed":"bg-accent-dim/20 border-accent/20 text-accent hover:bg-accent-dim/40 cursor-pointer"}`}
+          style={consultandoTodo?{animation:"pulse 1.5s infinite"}:{}}>
+          {consultandoTodo?`CONSULTANDO...`:`CONSULTAR TODO (${props.length})`}
+        </button>
+      </div>
+
+      {/* TABLE HEADER */}
+      <div className="grid grid-cols-[2.2fr_1.6fr_1fr_1.2fr_1fr_auto] px-4 py-2 gap-3 border-b border-bg-border bg-bg">
+        {["ROL / Descripcion","Comuna / Destino","Propietario","Deuda","Cuotas",""].map((h,i)=>(
+          <div key={i} className={`text-[9px] text-neutral-700 tracking-[0.15em] uppercase ${i>=2&&i<=4?"text-center":""}`}>{h}</div>
+        ))}
+      </div>
+
+      {/* LIST */}
+      <div>
+        {pf.length===0?(
+          <div className="py-16 text-center text-neutral-700">
+            <div className="text-4xl mb-3 opacity-20">--</div>
+            <div className="text-sm">{props.length===0?"Agrega propiedades para comenzar":"Sin resultados para el filtro actual"}</div>
+          </div>
+        ):pf.map(prop=>(
+          <PropertyRow key={prop.id} prop={prop} onConsultar={consultar}
+            loading={loadingIds.has(prop.id)} resultado={resultados[prop.id]}
+            onDelete={id=>{setProps(p=>p.filter(x=>x.id!==id));setResultados(r=>{const n={...r};delete n[id];return n;});}}
+            onVerHistorial={p=>setHistorialProp({...p,_historialLocal:p._historialLocal,propiedad_id:resultados[p.id]?.propiedad_id||p.propiedad_id||null})}/>
+        ))}
+      </div>
+
+      {/* FOOTER */}
+      <div className="border-t border-bg-border px-5 py-3 flex justify-between bg-bg mt-5">
+        <div className="text-[10px] text-neutral-800">
+          {backendOk?`Backend: ${API} | SQLite: contribuciones.db`:"Backend no conectado"}
+        </div>
+        <div className="text-[10px] text-neutral-800 font-mono">{pf.length}/{props.length} propiedades</div>
+      </div>
+
+      {showAdd&&<AddModal regiones={regiones} comunasPorRegion={comunasPorRegion} onAdd={p=>setProps(prev=>[...prev,p])} onClose={()=>setShowAdd(false)}/>}
+      {showImport&&<ImportModal onImport={lista=>setProps(prev=>[...prev,...lista])} onClose={()=>setShowImport(false)}/>}
+      {historialProp&&<HistorialPanel prop={historialProp} onClose={()=>setHistorialProp(null)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
