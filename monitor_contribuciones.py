@@ -1,5 +1,5 @@
 """
-monitor_contribuciones.py — Chequeo automatico de contribuciones + alerta por email
+monitor_contribuciones.py — Chequeo automatico de contribuciones + alerta por email y WhatsApp
 Uso local:  python monitor_contribuciones.py
 GitHub Actions: se ejecuta via cron, usa secrets para credenciales
 """
@@ -23,6 +23,11 @@ CONFIG_FILE = Path(__file__).parent / "propiedades_monitor.json"
 GMAIL_USER = os.environ.get("GMAIL_USER", "")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 EMAIL_DESTINO = os.environ.get("EMAIL_DESTINO", "")
+
+# WhatsApp Business API (Meta)
+WA_TOKEN = os.environ.get("WA_TOKEN", "")
+WA_PHONE_ID = os.environ.get("WA_PHONE_ID", "988131834391187")
+WA_DESTINO = os.environ.get("WA_DESTINO", "56944084156")
 
 # -- SII API Client -----------------------------------------------------------
 
@@ -291,6 +296,63 @@ def enviar_email(destinatario, asunto, html_body):
         return False
 
 
+def enviar_whatsapp(alertas, resultados):
+    """Envia resumen por WhatsApp via Meta Business API."""
+    if not WA_TOKEN:
+        print("[WA] WA_TOKEN no configurado. Omitiendo WhatsApp.")
+        return False
+
+    # Construir mensaje de texto
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    total_deuda = sum(r["deuda_total"] for r in resultados)
+    lineas = [f"*CONTRIBUCIONES CL* | {fecha}", ""]
+
+    if alertas:
+        lineas.append(f"⚠ *{len(alertas)} ALERTA(S):*")
+        for a in alertas:
+            p = a["propiedad"]
+            lineas.append(f"")
+            lineas.append(f"*ROL {p['rol']}* | {p['comuna']}")
+            lineas.append(f"{p['direccion']} | {p['destino']}")
+            for m in a["motivos"]:
+                lineas.append(f"  → {m}")
+            for cv in p["cuotas_vencidas"]:
+                lineas.append(f"  C{cv['cuota']} {cv['agno']} | Vto: {cv['vencimiento']} | ${cv['total_pago']:,.0f}")
+    else:
+        lineas.append("✅ Todas las propiedades dentro de los umbrales.")
+
+    lineas.append("")
+    lineas.append(f"*Portafolio:* {len(resultados)} propiedades | Deuda total: ${total_deuda:,.0f}")
+
+    texto = "\n".join(lineas)
+
+    try:
+        r = requests.post(
+            f"https://graph.facebook.com/v22.0/{WA_PHONE_ID}/messages",
+            headers={
+                "Authorization": f"Bearer {WA_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "messaging_product": "whatsapp",
+                "to": WA_DESTINO,
+                "type": "text",
+                "text": {"body": texto},
+            },
+            timeout=15,
+        )
+        data = r.json()
+        if "messages" in data:
+            print(f"[WA] Enviado a +{WA_DESTINO}")
+            return True
+        else:
+            print(f"[WA] Error: {data.get('error', {}).get('message', data)}")
+            return False
+    except Exception as e:
+        print(f"[WA] Error: {e}")
+        return False
+
+
 # -- Main ----------------------------------------------------------------------
 
 def main():
@@ -363,6 +425,9 @@ def main():
 
     html = construir_html(alertas, resultados, config)
     enviar_email(email_dest, asunto, html)
+
+    # Enviar WhatsApp
+    enviar_whatsapp(alertas, resultados)
 
     print()
     print("  Monitor finalizado.")
