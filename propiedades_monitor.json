@@ -1,6 +1,5 @@
 {
   "config": {
-    "email_destino": "tu-email@gmail.com",
     "umbral_deuda": 500000,
     "umbral_cuotas_vencidas": 2,
     "notificar_cambios_estado": true
@@ -10,14 +9,315 @@
       "rol": "13",
       "subrol": "1",
       "codigo_comuna": "9201",
-      "descripcion": "Local Comercial Temuco",
+      "descripcion": "Local Comercial",
       "encargado": ""
     },
     {
       "rol": "1",
       "subrol": "1",
       "codigo_comuna": "9201",
-      "descripcion": "Vivienda Balmaceda Temuco",
+      "descripcion": "Vivienda Balmaceda",
+      "encargado": ""
+    },
+    {
+      "rol": "85",
+      "subrol": "1",
+      "codigo_comuna": "9201",
+      "descripcion": "Las Heras",
+      "encargado": ""
+    },
+    {
+      "rol": "85",
+      "subrol": "2",
+      "codigo_comuna": "9201",
+      "descripcion": "Las Heras",
+      "encargado": ""
+    },
+    {
+      "rol": "3367",
+      "subrol": "474",
+      "codigo_comuna": "9220",
+      "descripcion": "Parcela 1 Km. 2, Sector Puente Sapo",
+      "encargado": ""
+    },
+    {
+      "rol": "3250",
+      "subrol": "533",
+      "codigo_comuna": "9201",
+      "descripcion": "Lote N° 2-1, Botrolhue de 0,5 Há",
+      "encargado": ""
+    },
+    {
+      "rol": "3250",
+      "subrol": "571",
+      "codigo_comuna": "9201",
+      "descripcion": "Lote N° 4 Pc. 2, Botrolhue de 0,8795 Há",
+      "encargado": ""
+    },
+    {
+      "rol": "91",
+      "subrol": "085",
+      "codigo_comuna": "9201",
+      "descripcion": "Depto. Portales N° 1012, Depto. 301",
+      "encargado": ""
+    },
+    {
+      "rol": "3250",
+      "subrol": "714",
+      "codigo_comuna": "9201",
+      "descripcion": "Sitio Botrolhue, 3.753,32 M2",
+      "encargado": ""
+    },
+    {
+      "rol": "3250",
+      "subrol": "665",
+      "codigo_comuna": "9201",
+      "descripcion": "Lote N° 2-2, Botrolhue 0,50 Há",
+      "encargado": ""
+    },
+    {
+      "rol": "3250",
+      "subrol": "672",
+      "codigo_comuna": "9201",
+      "descripcion": "Lote N° 2-31, Botrolhue 0,50 Há",
+      "encargado": ""
+    },
+    {
+      "rol": "64",
+      "subrol": "913",
+      "codigo_comuna": "9111",
+      "descripcion": "Complejo Cabañas, Orilla Lago Icalma",
+      "encargado": ""
+    },
+    {
+      "rol": "209",
+      "subrol": "59",
+      "codigo_comuna": "9110",
+      "descripcion": "Fundo El Codiciado, 905 Há (VENDIDO)",
+      "encargado": ""
+    },
+    {
+      "rol": "640",
+      "subrol": "9",
+      "codigo_comuna": "9109",
+      "descripcion": "Lugar Manzanaco, 17,72 Há",
+      "encargado": ""
+    },
+    {
+      "rol": "311",
+      "subrol": "347",
+      "codigo_comuna": "9217",
+      "descripcion": "Lote N° 1, Alpehue 56,16 Há, El Mirador Lt. 1",
+      "encargado": ""
+    },
+    {
+      "rol": "1506",
+      "subrol": "7",
+      "codigo_comuna": "9201",
+      "descripcion": "San Guillermo N° 905, Pobl. Dreves, Local Comercial",
+      "encargado": ""
+    },
+    {
+      "rol": "1425",
+      "subrol": "91",
+      "codigo_comuna": "9201",
+      "descripcion": "San Martin 01345, Local Comercial",
+      "encargado": ""
+    },
+    {
+      "rol": "3250",
+      "subrol": "574",
+      "codigo_comuna": "9201",
+      "descripcion": "Lote 2-1-A, Botrolhue 1 Há, Puente Huigan",
+      "encargado": ""
+    },
+    {
+      "rol": "55",
+      "subrol": "23",
+      "codigo_comuna": "9201",
+      "descripcion": "Barros Arana N° 292, Local Comercial",
+      "encargado": ""
+    },
+    {
+      "rol": "85",
+      "subrol": "10",
+      "codigo_comuna": "9201",
+      "descripcion": "Caupolican N° 442",
+      "encargado": ""
+    },
+    {
+      "rol": "2510",
+      "subrol": "19",
+      "codigo_comuna": "9201",
+      "descripcion": "Gabriela Mistral N° 01613",
+      "encargado": ""
+    },
+    {
+      "rol": "3203",
+      "subrol": "138",
+      "codigo_comuna": "9201",
+      "descripcion": "Hijuela Roble Huacho, Salida Norte 8,70 Há",
+      "encargado": ""
+    },
+    {
+      "rol": "3280",
+      "subrol": "25",
+      "codigo_comuna": "9205",
+      "descripcion": "Fundo La Estrela, Lote 3-A-1, 115,61 Há",
+      "encargado": ""
+    },
+    {
+      "rol": "91",
+      "subrol": "41",
+      "codigo_comuna": "9201",
+      "descripcion": "Manuel Montt 1027, Depto. 217, Local Comercial",
+      "encargado": ""
+    },
+    {
+      "rol": "2493",
+      "subrol": "1",
+      "codigo_comuna": "9201",
+      "descripcion": "Gabriela Mistral N° 01615",
+      "encargado": ""
+    },
+    {
+      "rol": "957",
+      "subrol": "468",
+      "codigo_comuna": "4101",
+      "descripcion": "Avda. Del Mar 3600, Depto. 412, Edif. Agua Marina Norte",
+      "encargado": ""
+    },
+    {
+      "rol": "957",
+      "subrol": "480",
+      "codigo_comuna": "4101",
+      "descripcion": "Avda. Del Mar 3600, Bodega, Edif. Agua Marina Norte",
+      "encargado": ""
+    },
+    {
+      "rol": "536",
+      "subrol": "90",
+      "codigo_comuna": "9109",
+      "descripcion": "Mingorrial, Lote 2-A-1, Inspector Fernandez",
+      "encargado": ""
+    },
+    {
+      "rol": "536",
+      "subrol": "94",
+      "codigo_comuna": "9109",
+      "descripcion": "Mingorrial, Inspector Fernandez",
+      "encargado": ""
+    },
+    {
+      "rol": "757",
+      "subrol": "20",
+      "codigo_comuna": "9201",
+      "descripcion": "Calle Ecuador 1609",
+      "encargado": ""
+    },
+    {
+      "rol": "2903",
+      "subrol": "12",
+      "codigo_comuna": "9201",
+      "descripcion": "Manuel Recabarren 1390, Amanecer",
+      "encargado": ""
+    },
+    {
+      "rol": "306",
+      "subrol": "639",
+      "codigo_comuna": "9215",
+      "descripcion": "Pc. 18 Piedra Amarilla",
+      "encargado": ""
+    },
+    {
+      "rol": "1392",
+      "subrol": "20",
+      "codigo_comuna": "9201",
+      "descripcion": "Avda Alemania 01765, sitio 11",
+      "encargado": ""
+    },
+    {
+      "rol": "1525",
+      "subrol": "984",
+      "codigo_comuna": "8401",
+      "descripcion": "Lote A-21 Camino Verde, Parcela 21",
+      "encargado": ""
+    },
+    {
+      "rol": "512",
+      "subrol": "6",
+      "codigo_comuna": "9201",
+      "descripcion": "Manuel Balmaceda N° 1179, Locales Comerciales",
+      "encargado": ""
+    },
+    {
+      "rol": "3200",
+      "subrol": "926",
+      "codigo_comuna": "9201",
+      "descripcion": "Hijuela 50-A-2, 0,85 Há Ralun Coyan, Sitio Urbano",
+      "encargado": ""
+    },
+    {
+      "rol": "1376",
+      "subrol": "48",
+      "codigo_comuna": "9201",
+      "descripcion": "Callejon Massmann N° 350, Habitacion",
+      "encargado": ""
+    },
+    {
+      "rol": "92",
+      "subrol": "15",
+      "codigo_comuna": "9201",
+      "descripcion": "Pasaje Riquelme N° 6-B, Local Comercial",
+      "encargado": ""
+    },
+    {
+      "rol": "1392",
+      "subrol": "18",
+      "codigo_comuna": "9201",
+      "descripcion": "Avda. Alemania N° 01745, Local Comercial",
+      "encargado": ""
+    },
+    {
+      "rol": "2903",
+      "subrol": "11",
+      "codigo_comuna": "9201",
+      "descripcion": "M. Recabarren 01380, Local Comercial",
+      "encargado": ""
+    },
+    {
+      "rol": "208",
+      "subrol": "74",
+      "codigo_comuna": "9110",
+      "descripcion": "Hijuela Santa Rosa, 87,50 Há",
+      "encargado": ""
+    },
+    {
+      "rol": "85",
+      "subrol": "7",
+      "codigo_comuna": "9201",
+      "descripcion": "Las Heras N° 453, Local Comercial",
+      "encargado": ""
+    },
+    {
+      "rol": "1416",
+      "subrol": "144",
+      "codigo_comuna": "9201",
+      "descripcion": "Edif. Simon Bolivar, Senador Estebanez N° 791, Depto. 104",
+      "encargado": ""
+    },
+    {
+      "rol": "1416",
+      "subrol": "142",
+      "codigo_comuna": "9201",
+      "descripcion": "Edif. Simon Bolivar, Senador Estebanez N° 791, Depto. 102",
+      "encargado": ""
+    },
+    {
+      "rol": "172",
+      "subrol": "194",
+      "codigo_comuna": "7202",
+      "descripcion": "Parcela Luchita",
       "encargado": ""
     }
   ]
