@@ -2,12 +2,14 @@
 db_manager.py -- Base de datos SQLite para historial de contribuciones
 Ejecutar una vez para inicializar: python db_manager.py
 """
+import os
 import sqlite3
 import json
 from datetime import datetime
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "contribuciones.db"
+# Si hay volumen Railway, usar ese path; sino usar local
+DB_PATH = Path(os.environ.get("DATABASE_PATH", Path(__file__).parent / "contribuciones.db"))
 
 
 def get_conn():
