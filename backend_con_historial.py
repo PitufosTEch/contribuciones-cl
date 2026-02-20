@@ -2,17 +2,18 @@
 backend_con_historial.py — Servidor Flask con API REST SII + historial SQLite
 Uso: python backend_con_historial.py
 """
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from datetime import datetime
 from pathlib import Path
+import os
 import requests as http_requests
 import json
 import uuid
 
 from db_manager import (
     init_db, upsert_propiedad, get_todas_propiedades,
-    get_propiedad, eliminar_propiedad,
+    get_propiedad, eliminar_propiedad, update_propiedad,
     guardar_consulta, get_historial, get_resumen_global
 )
 
@@ -253,6 +254,12 @@ def mock_scrape(rol, subrol, region, comuna):
 
 # ── RUTAS ────────────────────────────────────────────────────────────────────
 
+@app.route("/")
+def index():
+    """Sirve la app web."""
+    return send_file("contribuciones_con_historial.html")
+
+
 @app.route("/health")
 def health():
     client = get_sii_client()
@@ -276,9 +283,17 @@ def agregar_propiedad():
         d["rol"], d.get("subrol", "0"),
         d.get("region_code", ""), d["comuna"],
         d.get("codigo_comuna", ""),
-        d.get("descripcion", "")
+        d.get("descripcion", ""),
+        d.get("encargado", "")
     )
     return jsonify({"id": prop_id, "status": "ok"})
+
+
+@app.route("/propiedades/<int:prop_id>", methods=["PATCH"])
+def actualizar_propiedad(prop_id):
+    d = request.json
+    update_propiedad(prop_id, d)
+    return jsonify({"status": "ok"})
 
 
 @app.route("/propiedades/<int:prop_id>", methods=["DELETE"])
@@ -295,6 +310,7 @@ def consultar():
     codigo_comuna = request.args.get("codigo_comuna", "").strip()
     region_code = request.args.get("region", "").strip()
     descripcion = request.args.get("descripcion", "").strip()
+    encargado = request.args.get("encargado", "").strip()
     demo = request.args.get("demo", "false").lower() == "true"
 
     if not rol:
@@ -307,7 +323,7 @@ def consultar():
         return jsonify({"error": f"Comuna '{comuna}' no reconocida. Usar codigo_comuna directo."}), 400
 
     # Registrar propiedad en BD
-    prop_id = upsert_propiedad(rol, subrol, region_code, comuna, codigo_comuna, descripcion)
+    prop_id = upsert_propiedad(rol, subrol, region_code, comuna, codigo_comuna, descripcion, encargado)
 
     if demo:
         resultado = mock_scrape(rol, subrol, region_code, comuna)
@@ -410,4 +426,6 @@ if __name__ == "__main__":
     print("  POST /reset-session")
     print("=" * 55)
     print()
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+    app.run(host="0.0.0.0", port=port, debug=debug)

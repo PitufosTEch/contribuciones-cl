@@ -29,6 +29,7 @@ def init_db():
             comuna          TEXT    NOT NULL DEFAULT '',
             codigo_comuna   TEXT    NOT NULL DEFAULT '',
             descripcion     TEXT    DEFAULT '',
+            encargado       TEXT    DEFAULT '',
             activa          INTEGER DEFAULT 1,
             created_at      TEXT    DEFAULT (datetime('now','localtime'))
         );
@@ -55,13 +56,21 @@ def init_db():
             ON consultas(propiedad_id, fecha_consulta DESC);
     """)
     conn.commit()
+
+    # Migracion: agregar columna encargado si no existe (para DBs existentes)
+    try:
+        conn.execute("SELECT encargado FROM propiedades LIMIT 1")
+    except sqlite3.OperationalError:
+        conn.execute("ALTER TABLE propiedades ADD COLUMN encargado TEXT DEFAULT ''")
+        conn.commit()
+
     conn.close()
     print(f"[OK] Base de datos lista en: {DB_PATH}")
 
 
 # -- PROPIEDADES ---------------------------------------------------------------
 
-def upsert_propiedad(rol, subrol, region_code, comuna, codigo_comuna="", descripcion=""):
+def upsert_propiedad(rol, subrol, region_code, comuna, codigo_comuna="", descripcion="", encargado=""):
     """Inserta o retorna la propiedad. Devuelve el id."""
     conn = get_conn()
     cur = conn.execute(
@@ -71,15 +80,15 @@ def upsert_propiedad(rol, subrol, region_code, comuna, codigo_comuna="", descrip
     row = cur.fetchone()
     if row:
         conn.execute(
-            "UPDATE propiedades SET descripcion=?, region_code=?, comuna=?, activa=1 WHERE id=?",
-            (descripcion, region_code, comuna, row["id"])
+            "UPDATE propiedades SET descripcion=?, region_code=?, comuna=?, encargado=COALESCE(NULLIF(?,''),(SELECT encargado FROM propiedades WHERE id=?)), activa=1 WHERE id=?",
+            (descripcion, region_code, comuna, encargado, row["id"], row["id"])
         )
         conn.commit()
         prop_id = row["id"]
     else:
         cur = conn.execute(
-            "INSERT INTO propiedades(rol,subrol,region_code,comuna,codigo_comuna,descripcion) VALUES(?,?,?,?,?,?)",
-            (rol, subrol, region_code, comuna, codigo_comuna, descripcion)
+            "INSERT INTO propiedades(rol,subrol,region_code,comuna,codigo_comuna,descripcion,encargado) VALUES(?,?,?,?,?,?,?)",
+            (rol, subrol, region_code, comuna, codigo_comuna, descripcion, encargado)
         )
         conn.commit()
         prop_id = cur.lastrowid
@@ -121,6 +130,23 @@ def eliminar_propiedad(prop_id):
     conn = get_conn()
     conn.execute("UPDATE propiedades SET activa=0 WHERE id=?", (prop_id,))
     conn.commit()
+    conn.close()
+
+
+def update_propiedad(prop_id, campos: dict):
+    """Actualiza campos permitidos de una propiedad."""
+    conn = get_conn()
+    allowed = ["encargado", "descripcion"]
+    sets = []
+    vals = []
+    for k in allowed:
+        if k in campos:
+            sets.append(f"{k}=?")
+            vals.append(campos[k])
+    if sets:
+        vals.append(prop_id)
+        conn.execute(f"UPDATE propiedades SET {','.join(sets)} WHERE id=?", vals)
+        conn.commit()
     conn.close()
 
 

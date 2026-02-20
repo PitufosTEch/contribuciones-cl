@@ -40,10 +40,11 @@ tailwind.config = {
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const{useState,useCallback,useEffect,useRef}=React;
+const{useState,useCallback,useEffect,useRef,useMemo}=React;
 
 // -- CONFIG -------------------------------------------------------------------
-const API="http://localhost:5000";
+// Auto-detect: si se abre como file:// usa localhost, si viene del server usa rutas relativas
+const API = window.location.protocol === "file:" ? "http://localhost:5000" : "";
 const DEMO_MODE=false;
 
 // -- UTILS --------------------------------------------------------------------
@@ -155,15 +156,23 @@ function HistorialPanel({prop,onClose}){
 }
 
 // -- PROPERTY ROW -------------------------------------------------------------
-function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerHistorial}){
+const GRID="grid grid-cols-[1.8fr_1.2fr_1fr_0.9fr_1fr_0.7fr_auto]";
+
+function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerHistorial,onUpdateEncargado}){
   const[expanded,setExpanded]=useState(false);
   const hasDebt=resultado?.deuda_total>0;
   const tieneHistorial=(prop._historialLocal?.length||0)>1||(prop.propiedad_id&&resultado);
   const hayCambios=resultado?.cambios?.length>0;
 
+  const editEncargado=(e)=>{
+    e.stopPropagation();
+    const nuevo=prompt("Encargado de pago:",prop.encargado||"");
+    if(nuevo!==null)onUpdateEncargado(prop.id,nuevo,prop.propiedad_id);
+  };
+
   return(
     <div className="border-b border-bg-border/50">
-      <div className={`grid grid-cols-[2.2fr_1.6fr_1fr_1.2fr_1fr_auto] items-center px-4 py-3 gap-3 t200 cursor-pointer ${expanded?"bg-bg-hover":"hover:bg-bg-hover/50"}`}
+      <div className={`${GRID} items-center px-4 py-3 gap-3 t200 cursor-pointer ${expanded?"bg-bg-hover":"hover:bg-bg-hover/50"}`}
         onClick={()=>resultado&&setExpanded(!expanded)}>
         <div>
           <div className="font-mono text-sm font-semibold text-white flex items-center gap-2">
@@ -176,8 +185,15 @@ function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerHistorial
           <div className="text-xs text-neutral-300">{prop.comuna||resultado?.comuna_descripcion||""}</div>
           <div className="text-[10px] text-neutral-600 mt-0.5">{resultado?.destino||""}</div>
         </div>
+        <div className="cursor-pointer group" onClick={editEncargado} title="Click para editar encargado">
+          {prop.encargado?(
+            <div className="text-xs text-neutral-300 group-hover:text-accent t200">{prop.encargado}</div>
+          ):(
+            <div className="text-xs text-neutral-700 group-hover:text-neutral-400 t200 italic">Sin asignar</div>
+          )}
+        </div>
         {resultado?(<>
-          <div className="text-right font-mono text-xs text-neutral-400">{resultado.propietario?.slice(0,25)||"--"}</div>
+          <div className="text-right font-mono text-xs text-neutral-400 truncate" title={resultado.propietario}>{resultado.propietario?.slice(0,20)||"--"}</div>
           <div className={`text-center font-mono font-bold text-sm ${hasDebt?"text-danger":"text-accent"}`}>
             {hasDebt?fmt(resultado.deuda_total):"Al dia"}
           </div>
@@ -263,7 +279,7 @@ function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerHistorial
 // -- ADD MODAL ----------------------------------------------------------------
 function AddModal({regiones,comunasPorRegion,onAdd,onClose}){
   const defaultReg=regiones.length>0?regiones.find(r=>r.codigo==="9")?.codigo||regiones[0].codigo:"9";
-  const[f,setF]=useState({rol:"",subrol:"0",region:defaultReg,comuna:"",codigo_comuna:"",descripcion:""});
+  const[f,setF]=useState({rol:"",subrol:"0",region:defaultReg,comuna:"",codigo_comuna:"",descripcion:"",encargado:""});
   const comunas=comunasPorRegion[f.region]||[];
 
   useEffect(()=>{
@@ -302,10 +318,17 @@ function AddModal({regiones,comunasPorRegion,onAdd,onClose}){
             {comunas.map(c=><option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
           </select>
         </div>
-        <div className="mb-5">
-          <label className="text-[10px] text-neutral-500 tracking-widest uppercase block mb-1.5">Descripcion</label>
-          <input type="text" placeholder="ej: Casa Temuco Norte" value={f.descripcion} onChange={e=>setF({...f,descripcion:e.target.value})}
-            className="w-full bg-bg border border-bg-border text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-accent/50 t200"/>
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div>
+            <label className="text-[10px] text-neutral-500 tracking-widest uppercase block mb-1.5">Descripcion</label>
+            <input type="text" placeholder="ej: Casa Temuco Norte" value={f.descripcion} onChange={e=>setF({...f,descripcion:e.target.value})}
+              className="w-full bg-bg border border-bg-border text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-accent/50 t200"/>
+          </div>
+          <div>
+            <label className="text-[10px] text-neutral-500 tracking-widest uppercase block mb-1.5">Encargado</label>
+            <input type="text" placeholder="ej: Juan Perez" value={f.encargado} onChange={e=>setF({...f,encargado:e.target.value})}
+              className="w-full bg-bg border border-bg-border text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-accent/50 t200"/>
+          </div>
         </div>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-bg-border text-neutral-500 hover:text-white hover:border-neutral-600 t200 text-sm">Cancelar</button>
@@ -319,7 +342,7 @@ function AddModal({regiones,comunasPorRegion,onAdd,onClose}){
 
 // -- IMPORT MODAL -------------------------------------------------------------
 function ImportModal({onImport,onClose}){
-  const[txt,setTxt]=useState("ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESCRIPCION\n13;1;9201;TEMUCO;Local Comercial\n500;3;9201;TEMUCO;Vivienda Norte");
+  const[txt,setTxt]=useState("ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESCRIPCION;ENCARGADO\n13;1;9201;TEMUCO;Local Comercial;Juan Perez\n500;3;9201;TEMUCO;Vivienda Norte;Maria Lopez");
   const[preview,setPreview]=useState([]);
   const[err,setErr]=useState("");
   const parse=raw=>{
@@ -327,7 +350,7 @@ function ImportModal({onImport,onClose}){
       const p=raw.trim().split("\n").slice(1).filter(l=>l.trim()).map((l,i)=>{
         const ps=l.split(";");
         if(ps.length<3)throw new Error(`Linea ${i+2}: minimo 3 columnas`)
-        return{id:Date.now()+i,rol:ps[0].trim(),subrol:ps[1].trim()||"0",codigo_comuna:ps[2].trim(),region:"",comuna:ps[3]?.trim()||"",descripcion:ps[4]?.trim()||""};
+        return{id:Date.now()+i,rol:ps[0].trim(),subrol:ps[1].trim()||"0",codigo_comuna:ps[2].trim(),region:"",comuna:ps[3]?.trim()||"",descripcion:ps[4]?.trim()||"",encargado:ps[5]?.trim()||""};
       });
       setPreview(p);setErr("");
     }catch(e){setErr(e.message);setPreview([]);}
@@ -337,7 +360,7 @@ function ImportModal({onImport,onClose}){
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-bg-card border border-bg-border rounded-xl p-7 w-[560px] shadow-2xl fade-in" onClick={e=>e.stopPropagation()}>
         <div className="text-base font-semibold text-white mb-1.5 tracking-wide">Importar CSV</div>
-        <div className="text-xs text-neutral-500 mb-4">Formato: <code className="text-accent font-mono">ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESCRIPCION</code></div>
+        <div className="text-xs text-neutral-500 mb-4">Formato: <code className="text-accent font-mono">ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESCRIPCION;ENCARGADO</code></div>
         <textarea value={txt} onChange={e=>{setTxt(e.target.value);parse(e.target.value);}} rows={7}
           className="w-full bg-bg border border-bg-border text-accent/80 px-3 py-2.5 rounded-lg font-mono text-[11px] resize-y outline-none focus:border-accent/40 t200"/>
         {err&&<div className="text-danger text-xs mt-2">{err}</div>}
@@ -364,13 +387,17 @@ function App(){
   const[consultandoTodo,setConsultandoTodo]=useState(false);
   const[filtro,setFiltro]=useState("todos");
   const[busqueda,setBusqueda]=useState("");
+  const[filtroComuna,setFiltroComuna]=useState("");
+  const[filtroEncargado,setFiltroEncargado]=useState("");
   const[progreso,setProgreso]=useState(null);
   const[historialProp,setHistorialProp]=useState(null);
   const[backendOk,setBackendOk]=useState(null);
   const[regiones,setRegiones]=useState([]);
   const[comunasPorRegion,setComunasPorRegion]=useState({});
-  const[sortCol,setSortCol]=useState(null);
-  const[sortDir,setSortDir]=useState("asc");
+
+  // Valores unicos para filtros
+  const comunasUnicas=useMemo(()=>[...new Set(props.map(p=>p.comuna).filter(Boolean))].sort(),[props]);
+  const encargadosUnicos=useMemo(()=>[...new Set(props.map(p=>p.encargado).filter(Boolean))].sort(),[props]);
 
   // Cargar regiones y comunas del backend
   useEffect(()=>{
@@ -386,7 +413,7 @@ function App(){
       fetch(`${API}/propiedades`).then(r=>r.json()).then(savedProps=>{
         if(savedProps.length>0){
           const mapped=savedProps.map(p=>({id:p.id,rol:p.rol,subrol:p.subrol,region:p.region_code,
-            comuna:p.comuna,codigo_comuna:p.codigo_comuna,descripcion:p.descripcion,propiedad_id:p.id}));
+            comuna:p.comuna,codigo_comuna:p.codigo_comuna,descripcion:p.descripcion,encargado:p.encargado||"",propiedad_id:p.id}));
           setProps(mapped);
         }
       }).catch(()=>{});
@@ -401,7 +428,7 @@ function App(){
         const params=new URLSearchParams({
           rol:prop.rol,subrol:prop.subrol,comuna:prop.comuna||"",
           codigo_comuna:prop.codigo_comuna||"",region:prop.region||"",
-          descripcion:prop.descripcion||"",
+          descripcion:prop.descripcion||"",encargado:prop.encargado||"",
           ...(DEMO_MODE?{demo:"true"}:{})
         });
         const r=await fetch(`${API}/consultar?${params}`);
@@ -428,6 +455,18 @@ function App(){
     setConsultandoTodo(false);setProgreso(null);
   };
 
+  const updateEncargado=async(propLocalId,nuevoEncargado,propDbId)=>{
+    setProps(prev=>prev.map(p=>p.id===propLocalId?{...p,encargado:nuevoEncargado}:p));
+    if(propDbId&&backendOk){
+      try{
+        await fetch(`${API}/propiedades/${propDbId}`,{
+          method:"PATCH",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({encargado:nuevoEncargado})
+        });
+      }catch(e){console.error("Error actualizando encargado:",e);}
+    }
+  };
+
   const consultadas=props.filter(p=>resultados[p.id]);
   const conDeuda=consultadas.filter(p=>resultados[p.id]?.deuda_total>0);
   const alDia=consultadas.filter(p=>resultados[p.id]?.deuda_total===0&&!resultados[p.id]?.exento);
@@ -436,16 +475,18 @@ function App(){
   const pf=props.filter(p=>{
     const r=resultados[p.id];
     const mf=filtro==="todos"?true:filtro==="deuda"?r?.deuda_total>0:filtro==="aldia"?(r?.deuda_total===0&&!r?.exento):filtro==="exento"?r?.exento:!r;
-    const mb=busqueda===""||p.rol.includes(busqueda)||(p.comuna||"").toLowerCase().includes(busqueda.toLowerCase())||(p.descripcion||"").toLowerCase().includes(busqueda.toLowerCase())||(r?.direccion||"").toLowerCase().includes(busqueda.toLowerCase());
-    return mf&&mb;
+    const mb=busqueda===""||p.rol.includes(busqueda)||(p.comuna||"").toLowerCase().includes(busqueda.toLowerCase())||(p.descripcion||"").toLowerCase().includes(busqueda.toLowerCase())||(p.encargado||"").toLowerCase().includes(busqueda.toLowerCase())||(r?.direccion||"").toLowerCase().includes(busqueda.toLowerCase());
+    const mc=filtroComuna===""||p.comuna===filtroComuna;
+    const me=filtroEncargado===""||p.encargado===filtroEncargado;
+    return mf&&mb&&mc&&me;
   });
 
   const exportarCSV=()=>{
-    const rows=[["ROL","SUBROL","CODIGO_COMUNA","COMUNA","DESCRIPCION","DIRECCION","PROPIETARIO","DESTINO","DEUDA_TOTAL","C1","C2","C3","C4","ESTADO","ULTIMA_CONSULTA"]];
+    const rows=[["ROL","SUBROL","CODIGO_COMUNA","COMUNA","DESCRIPCION","ENCARGADO","DIRECCION","PROPIETARIO","DESTINO","DEUDA_TOTAL","C1","C2","C3","C4","ESTADO","ULTIMA_CONSULTA"]];
     props.forEach(p=>{
       const r=resultados[p.id];
       const cs=r?.cuotas||[];
-      rows.push([p.rol,p.subrol,p.codigo_comuna||"",p.comuna||"",p.descripcion||"",
+      rows.push([p.rol,p.subrol,p.codigo_comuna||"",p.comuna||"",p.descripcion||"",p.encargado||"",
         r?.direccion||"",r?.propietario||"",r?.destino||"",r?.deuda_total||"",
         ...Array.from({length:4},(_,i)=>cs[i]?.estado||""),
         r?(r.exento?"Exento":r.deuda_total>0?"Con Deuda":"Al Dia"):"Sin Consultar",
@@ -514,8 +555,22 @@ function App(){
                 filtro===k?"bg-accent/10 border-accent/30 text-accent":"border-transparent text-neutral-600 hover:text-neutral-400"}`}>{l}</button>
           ))}
         </div>
-        <input type="text" placeholder="Buscar ROL, comuna, direccion..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}
-          className="flex-1 min-w-[200px] bg-bg border border-bg-border text-neutral-300 px-3 py-1.5 rounded-lg text-xs outline-none focus:border-accent/40 t200"/>
+        {comunasUnicas.length>1&&(
+          <select value={filtroComuna} onChange={e=>setFiltroComuna(e.target.value)}
+            className="bg-bg border border-bg-border text-neutral-400 px-2 py-1 rounded-lg text-[11px] outline-none focus:border-accent/40 t200">
+            <option value="">Todas las comunas</option>
+            {comunasUnicas.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
+        {encargadosUnicos.length>1&&(
+          <select value={filtroEncargado} onChange={e=>setFiltroEncargado(e.target.value)}
+            className="bg-bg border border-bg-border text-neutral-400 px-2 py-1 rounded-lg text-[11px] outline-none focus:border-accent/40 t200">
+            <option value="">Todos los encargados</option>
+            {encargadosUnicos.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
+        <input type="text" placeholder="Buscar ROL, comuna, encargado..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}
+          className="flex-1 min-w-[180px] bg-bg border border-bg-border text-neutral-300 px-3 py-1.5 rounded-lg text-xs outline-none focus:border-accent/40 t200"/>
         <button onClick={consultarTodo} disabled={consultandoTodo||props.length===0}
           className={`px-4 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide t200 border whitespace-nowrap ${
             consultandoTodo?"border-bg-border text-neutral-600 cursor-not-allowed":"bg-accent-dim/20 border-accent/20 text-accent hover:bg-accent-dim/40 cursor-pointer"}`}
@@ -525,9 +580,9 @@ function App(){
       </div>
 
       {/* TABLE HEADER */}
-      <div className="grid grid-cols-[2.2fr_1.6fr_1fr_1.2fr_1fr_auto] px-4 py-2 gap-3 border-b border-bg-border bg-bg">
-        {["ROL / Descripcion","Comuna / Destino","Propietario","Deuda","Cuotas",""].map((h,i)=>(
-          <div key={i} className={`text-[9px] text-neutral-700 tracking-[0.15em] uppercase ${i>=2&&i<=4?"text-center":""}`}>{h}</div>
+      <div className={`${GRID} px-4 py-2 gap-3 border-b border-bg-border bg-bg`}>
+        {["ROL / Descripcion","Comuna / Destino","Encargado","Propietario","Deuda","Cuotas",""].map((h,i)=>(
+          <div key={i} className={`text-[9px] text-neutral-700 tracking-[0.15em] uppercase ${i>=3&&i<=5?"text-center":""}`}>{h}</div>
         ))}
       </div>
 
@@ -542,14 +597,15 @@ function App(){
           <PropertyRow key={prop.id} prop={prop} onConsultar={consultar}
             loading={loadingIds.has(prop.id)} resultado={resultados[prop.id]}
             onDelete={id=>{setProps(p=>p.filter(x=>x.id!==id));setResultados(r=>{const n={...r};delete n[id];return n;});}}
-            onVerHistorial={p=>setHistorialProp({...p,_historialLocal:p._historialLocal,propiedad_id:resultados[p.id]?.propiedad_id||p.propiedad_id||null})}/>
+            onVerHistorial={p=>setHistorialProp({...p,_historialLocal:p._historialLocal,propiedad_id:resultados[p.id]?.propiedad_id||p.propiedad_id||null})}
+            onUpdateEncargado={updateEncargado}/>
         ))}
       </div>
 
       {/* FOOTER */}
       <div className="border-t border-bg-border px-5 py-3 flex justify-between bg-bg mt-5">
         <div className="text-[10px] text-neutral-800">
-          {backendOk?`Backend: ${API} | SQLite: contribuciones.db`:"Backend no conectado"}
+          {backendOk?`Backend: ${API||window.location.origin} | SQLite: contribuciones.db`:"Backend no conectado"}
         </div>
         <div className="text-[10px] text-neutral-800 font-mono">{pf.length}/{props.length} propiedades</div>
       </div>
