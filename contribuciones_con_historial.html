@@ -11,70 +11,68 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
-    --bg:#050505;--bg2:#0a0a0a;--card:#0f0f0f;--card2:#141414;--border:#1a1a1a;--border2:#222;
-    --text:#fafafa;--text2:#a3a3a3;--text3:#525252;--text4:#333;
-    --green:#22c55e;--green-bg:rgba(34,197,94,0.06);--green-border:rgba(34,197,94,0.15);
-    --red:#ef4444;--red-bg:rgba(239,68,68,0.06);--red-border:rgba(239,68,68,0.15);
-    --yellow:#eab308;--yellow-bg:rgba(234,179,8,0.06);--yellow-border:rgba(234,179,8,0.15);
-    --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.06);--blue-border:rgba(59,130,246,0.15);
+    --bg:#f5f6f8;--bg2:#ffffff;--card:#ffffff;--card-hover:#fafbfc;
+    --border:#e5e7eb;--border2:#d1d5db;
+    --text:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;--text5:#d1d5db;
+    --green:#16a34a;--green-light:#dcfce7;--green-border:#bbf7d0;--green-text:#15803d;
+    --red:#dc2626;--red-light:#fef2f2;--red-border:#fecaca;--red-text:#b91c1c;
+    --yellow:#ca8a04;--yellow-light:#fefce8;--yellow-border:#fef08a;--yellow-text:#a16207;
+    --blue:#2563eb;--blue-light:#eff6ff;--blue-border:#bfdbfe;--blue-text:#1d4ed8;
+    --shadow-sm:0 1px 2px rgba(0,0,0,0.05);
+    --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md:0 4px 6px rgba(0,0,0,0.06),0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg:0 10px 25px rgba(0,0,0,0.08),0 4px 10px rgba(0,0,0,0.04);
   }
   body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
-  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:#262626;border-radius:99px}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:#c4c8cf;border-radius:99px}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-  @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-  .fade-in{animation:fadeIn 0.3s cubic-bezier(0.16,1,0.3,1)}
-  .slide-in{animation:slideIn 0.35s cubic-bezier(0.16,1,0.3,1)}
-  .t{transition:all 200ms cubic-bezier(0.4,0,0.2,1)}
-  select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-  input::placeholder{color:#383838}
-  .glow-green{box-shadow:0 0 20px rgba(34,197,94,0.08),inset 0 1px 0 rgba(34,197,94,0.05)}
-  .glow-red{box-shadow:0 0 20px rgba(239,68,68,0.08),inset 0 1px 0 rgba(239,68,68,0.05)}
+  .fade-in{animation:fadeIn 0.25s cubic-bezier(0.16,1,0.3,1)}
+  .slide-in{animation:slideIn 0.3s cubic-bezier(0.16,1,0.3,1)}
+  .t{transition:all 180ms ease}
+  select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  input::placeholder{color:var(--text4)}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
 const{useState,useCallback,useEffect,useMemo,useRef}=React;
+const API=window.location.protocol==="file:"?"http://localhost:5000":"";
 
-const API = window.location.protocol === "file:" ? "http://localhost:5000" : "";
-const DEMO_MODE=false;
-
-// -- UTILS / ICONS -----------------------------------------------------------
 const fmt=n=>n===0||!n?"$0":`$${n.toLocaleString("es-CL")}`;
-const EC={pagada:"var(--green)",pendiente:"var(--yellow)",vencida:"var(--red)",exento:"#6b7280",sin_datos:"#333"};
-const ECraw={pagada:"#22c55e",pendiente:"#eab308",vencida:"#ef4444",exento:"#6b7280",sin_datos:"#333"};
+const ECraw={pagada:"#16a34a",pendiente:"#ca8a04",vencida:"#dc2626",exento:"#6b7280",sin_datos:"#d1d5db"};
+const ECbg={pagada:"#dcfce7",pendiente:"#fefce8",vencida:"#fef2f2",exento:"#f3f4f6",sin_datos:"#f9fafb"};
 const EL={pagada:"Pagada",pendiente:"Pendiente",vencida:"Vencida",exento:"Exento",sin_datos:"--"};
 
-// SVG icons inline
-const IconBuilding=()=><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16"/></svg>;
-const IconSearch=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>;
-const IconCheck=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>;
-const IconAlert=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>;
+// SVG Icons
+const Icon=({d,size=16,sw=1.8})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+const IconBuilding=()=><><Icon d="M3 21h18"/><Icon d="M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1"/><Icon d="M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16"/></>;
+const IconSearch=()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>;
 const IconDollar=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>;
-const IconDownload=()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>;
-const IconUpload=()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>;
+const IconDownload=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>;
+const IconUpload=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>;
 const IconPlus=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 const IconRefresh=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>;
 const IconX=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-const IconTrash=()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>;
-const IconChevron=()=><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>;
-const IconClock=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>;
+const IconTrash=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>;
+const IconCheck=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>;
+const IconClock=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>;
+const IconChevDown=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>;
 
 function Badge({estado,size="sm"}){
-  const bg=ECraw[estado]||"#333";
+  const col=ECraw[estado]||"#9ca3af";const bg=ECbg[estado]||"#f3f4f6";
   const isXs=size==="xs";
   return <span className="t" style={{
-    display:"inline-flex",alignItems:"center",gap:"4px",
-    padding:isXs?"2px 6px":"3px 10px",borderRadius:"6px",
-    fontSize:isXs?"9px":"10px",fontFamily:"'JetBrains Mono',monospace",fontWeight:600,
-    letterSpacing:"0.05em",textTransform:"uppercase",
-    background:bg+"12",color:bg,border:`1px solid ${bg}22`
-  }}>{!isXs&&<span style={{width:6,height:6,borderRadius:"50%",background:bg,display:"inline-block"}}/>}{EL[estado]||estado}</span>;
+    display:"inline-flex",alignItems:"center",gap:4,
+    padding:isXs?"2px 7px":"3px 10px",borderRadius:6,
+    fontSize:isXs?10:11,fontWeight:600,letterSpacing:"0.02em",
+    background:bg,color:col
+  }}>{!isXs&&<span style={{width:6,height:6,borderRadius:"50%",background:col,display:"inline-block"}}/>}{EL[estado]||estado}</span>;
 }
 
-// -- PAGOS PANEL (SII) --------------------------------------------------------
+// -- PAGOS PANEL --------------------------------------------------------------
 function PagosPanel({prop,onClose}){
   const[pagos,setPagos]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -84,77 +82,62 @@ function PagosPanel({prop,onClose}){
   useEffect(()=>{
     if(!prop.codigo_comuna||!prop.rol){setLoading(false);setError("Datos insuficientes");return;}
     fetch(`${API}/pagos-sii?codigo_comuna=${prop.codigo_comuna}&rol=${prop.rol}&subrol=${prop.subrol||"0"}`)
-      .then(r=>r.json()).then(d=>{
-        if(d.error){setError(d.error);}
-        else{setPagos(d.data||[]);}
-        setLoading(false);
-      }).catch(e=>{setError("Error de conexion");setLoading(false);});
+      .then(r=>r.json()).then(d=>{if(d.error)setError(d.error);else setPagos(d.data||[]);setLoading(false);})
+      .catch(()=>{setError("Error de conexion");setLoading(false);});
   },[prop]);
 
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:50,display:"flex",justifyContent:"flex-end"}} onClick={onClose}>
-      <div className="slide-in" style={{width:500,background:"var(--bg2)",borderLeft:"1px solid var(--border)",height:"100%",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
-        {/* Header */}
-        <div style={{padding:"28px 28px 24px",borderBottom:"1px solid var(--border)",background:"var(--card)",position:"sticky",top:0,zIndex:10}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",backdropFilter:"blur(4px)",zIndex:50,display:"flex",justifyContent:"flex-end"}} onClick={onClose}>
+      <div className="slide-in" style={{width:480,background:"var(--bg2)",borderLeft:"1px solid var(--border)",height:"100%",overflowY:"auto",boxShadow:"-8px 0 30px rgba(0,0,0,0.1)"}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:"24px 24px 20px",borderBottom:"1px solid var(--border)",background:"var(--bg)",position:"sticky",top:0,zIndex:10}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
-              <div style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:8}}>Historial de Pagos SII</div>
-              <div style={{fontSize:20,fontWeight:700,color:"#fff",fontFamily:"'JetBrains Mono',monospace"}}>ROL {prop.rol}-{prop.subrol}</div>
+              <div style={{fontSize:10,color:"var(--text4)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:6}}>Historial de Pagos SII</div>
+              <div style={{fontSize:18,fontWeight:700,color:"var(--text)",fontFamily:"'JetBrains Mono',monospace"}}>ROL {prop.rol}-{prop.subrol}</div>
               <div style={{fontSize:13,color:"var(--text3)",marginTop:4}}>{prop.comuna} &middot; {prop.descripcion}</div>
             </div>
-            <button onClick={onClose} className="t" style={{width:36,height:36,borderRadius:10,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
-              onMouseOver={e=>{e.currentTarget.style.borderColor="var(--text3)";e.currentTarget.style.color="#fff"}}
-              onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}><IconX/></button>
+            <button onClick={onClose} className="t" style={{width:34,height:34,borderRadius:8,border:"1px solid var(--border)",background:"var(--bg2)",color:"var(--text4)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
+              onMouseOver={e=>{e.currentTarget.style.background="var(--bg)";e.currentTarget.style.color="var(--text2)"}}
+              onMouseOut={e=>{e.currentTarget.style.background="var(--bg2)";e.currentTarget.style.color="var(--text4)"}}><IconX/></button>
           </div>
           {pagos.length>0&&(
-            <div style={{marginTop:20,display:"flex",gap:16}}>
-              <div style={{flex:1,background:"var(--green-bg)",border:"1px solid var(--green-border)",borderRadius:12,padding:"14px 16px"}}>
-                <div style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:4}}>TOTAL PAGADO</div>
-                <div style={{fontSize:22,fontWeight:700,color:"var(--green)",fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totalPagado)}</div>
+            <div style={{marginTop:16,display:"flex",gap:12}}>
+              <div style={{flex:1,background:"var(--green-light)",border:"1px solid var(--green-border)",borderRadius:10,padding:"12px 14px"}}>
+                <div style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Total Pagado</div>
+                <div style={{fontSize:20,fontWeight:700,color:"var(--green-text)",fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totalPagado)}</div>
               </div>
-              <div style={{flex:1,background:"var(--card2)",border:"1px solid var(--border)",borderRadius:12,padding:"14px 16px"}}>
-                <div style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:4}}>PAGOS</div>
-                <div style={{fontSize:22,fontWeight:700,color:"#fff",fontFamily:"'JetBrains Mono',monospace"}}>{pagos.length}</div>
+              <div style={{flex:1,background:"var(--bg)",border:"1px solid var(--border)",borderRadius:10,padding:"12px 14px"}}>
+                <div style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Registros</div>
+                <div style={{fontSize:20,fontWeight:700,color:"var(--text)",fontFamily:"'JetBrains Mono',monospace"}}>{pagos.length}</div>
               </div>
             </div>
           )}
         </div>
 
         {loading?(
-          <div style={{padding:"80px 0",textAlign:"center",color:"var(--text3)",animation:"pulse 1.5s infinite"}}>
-            <IconClock/><div style={{marginTop:12,fontSize:13}}>Consultando SII...</div>
-          </div>
+          <div style={{padding:"60px 0",textAlign:"center",color:"var(--text4)"}}><div style={{animation:"pulse 1.5s infinite"}}><IconClock/></div><div style={{marginTop:10,fontSize:13}}>Consultando SII...</div></div>
         ):error?(
-          <div style={{padding:"80px 0",textAlign:"center",color:"var(--text4)"}}>{error}</div>
+          <div style={{padding:"60px 0",textAlign:"center",color:"var(--text4)"}}>{error}</div>
         ):pagos.length===0?(
-          <div style={{padding:"80px 0",textAlign:"center",color:"var(--text4)"}}>Sin pagos registrados en SII.</div>
+          <div style={{padding:"60px 0",textAlign:"center",color:"var(--text4)"}}>Sin pagos registrados.</div>
         ):(
-          <div style={{padding:24}}>
+          <div style={{padding:20}}>
             {pagos.map((p,idx)=>{
-              const monto=p.totalPagado||0;
-              const fecha=p.fechaPago||"--";
-              const tx=p.numeroTransaccion||"";
-              const isFirst=idx===0;
+              const monto=p.totalPagado||0;const fecha=p.fechaPago||"--";const tx=p.numeroTransaccion||"";const isFirst=idx===0;
               return(
-                <div key={idx} style={{display:"flex",gap:16,marginBottom:4}}>
+                <div key={idx} style={{display:"flex",gap:14,marginBottom:4}}>
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,paddingTop:6}}>
-                    <div style={{width:isFirst?12:8,height:isFirst?12:8,borderRadius:"50%",background:isFirst?"var(--green)":"var(--border2)",boxShadow:isFirst?"0 0 12px rgba(34,197,94,0.3)":"none"}}/>
+                    <div style={{width:isFirst?10:8,height:isFirst?10:8,borderRadius:"50%",background:isFirst?"var(--green)":"var(--border2)",boxShadow:isFirst?"0 0 8px rgba(22,163,74,0.3)":"none"}}/>
                     {idx<pagos.length-1&&<div style={{width:1,flex:1,background:"var(--border)",marginTop:4}}/>}
                   </div>
-                  <div className="t" style={{flex:1,borderRadius:14,padding:"18px 20px",marginBottom:8,
-                    background:isFirst?"var(--green-bg)":"var(--card)",
-                    border:`1px solid ${isFirst?"var(--green-border)":"var(--border)"}`,
-                    cursor:"default"}}
-                    onMouseOver={e=>{if(!isFirst)e.currentTarget.style.borderColor="var(--border2)"}}
-                    onMouseOut={e=>{if(!isFirst)e.currentTarget.style.borderColor="var(--border)"}}>
+                  <div className="t" style={{flex:1,borderRadius:10,padding:"14px 16px",marginBottom:6,
+                    background:isFirst?"var(--green-light)":"var(--bg2)",
+                    border:`1px solid ${isFirst?"var(--green-border)":"var(--border)"}`}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div style={{fontSize:13,color:"var(--text2)",fontWeight:500}}>{fecha}</div>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:17,fontWeight:700,color:isFirst?"var(--green)":"#fff"}}>{fmt(monto)}</div>
+                      <div style={{fontSize:13,color:"var(--text3)",fontWeight:500}}>{fecha}</div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:16,fontWeight:700,color:isFirst?"var(--green-text)":"var(--text)"}}>{fmt(monto)}</div>
                     </div>
-                    {p.propiedad?.[0]?.valorCuota && p.propiedad[0].valorCuota !== monto &&(
-                      <div style={{fontSize:11,color:"var(--text4)",fontFamily:"'JetBrains Mono',monospace",marginTop:4}}>Cuota base: {fmt(p.propiedad[0].valorCuota)}</div>
-                    )}
-                    {tx&&<div style={{fontSize:10,color:"var(--text4)",marginTop:8,fontFamily:"'JetBrains Mono',monospace"}}>Tx #{tx}</div>}
+                    {tx&&<div style={{fontSize:10,color:"var(--text4)",marginTop:6,fontFamily:"'JetBrains Mono',monospace"}}>Tx #{tx}</div>}
                   </div>
                 </div>
               );
@@ -171,146 +154,137 @@ function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerPagos,onU
   const[expanded,setExpanded]=useState(false);
   const hasDebt=resultado?.deuda_total>0;
   const hayCambios=resultado?.cambios?.length>0;
-  const rowRef=useRef(null);
+  const statusColor=!resultado?"var(--border)":hasDebt?"var(--red)":resultado.exento?"var(--text4)":"var(--green)";
 
-  const statusColor=!resultado?"transparent":hasDebt?"var(--red)":resultado.exento?"#6b7280":"var(--green)";
-
-  const editEncargado=(e)=>{
-    e.stopPropagation();
-    const nuevo=prompt("Encargado de pago:",prop.encargado||"");
-    if(nuevo!==null)onUpdateEncargado(prop.id,nuevo,prop.propiedad_id);
-  };
+  const editEncargado=e=>{e.stopPropagation();const n=prompt("Encargado de pago:",prop.encargado||"");if(n!==null)onUpdateEncargado(prop.id,n,prop.propiedad_id);};
 
   return(
-    <div className="fade-in" style={{margin:"0 24px 8px",borderRadius:16,overflow:"hidden",border:`1px solid ${expanded?"var(--border2)":"var(--border)"}`,background:"var(--card)",transition:"all 200ms"}}>
-      {/* Main row */}
-      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1.1fr 0.9fr 0.8fr 1fr auto",alignItems:"center",gap:0,cursor:resultado?"pointer":"default",transition:"background 200ms",background:expanded?"var(--card2)":"transparent"}}
+    <div className="fade-in" style={{background:"var(--card)",borderRadius:12,border:"1px solid var(--border)",marginBottom:8,overflow:"hidden",boxShadow:"var(--shadow-sm)",transition:"box-shadow 200ms"}}
+      onMouseOver={e=>e.currentTarget.style.boxShadow="var(--shadow)"}
+      onMouseOut={e=>e.currentTarget.style.boxShadow="var(--shadow-sm)"}>
+      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1fr 0.9fr 0.7fr 1.1fr auto",alignItems:"center",cursor:resultado?"pointer":"default",transition:"background 150ms"}}
         onClick={()=>resultado&&setExpanded(!expanded)}
-        onMouseOver={e=>{if(!expanded)e.currentTarget.style.background="var(--card2)"}}
-        onMouseOut={e=>{if(!expanded)e.currentTarget.style.background="transparent"}}>
+        onMouseOver={e=>e.currentTarget.style.background="var(--card-hover)"}
+        onMouseOut={e=>e.currentTarget.style.background="transparent"}>
 
-        {/* Status bar */}
-        <div style={{width:4,height:"100%",background:statusColor,borderRadius:"4px 0 0 4px",transition:"background 300ms"}}/>
+        <div style={{width:4,alignSelf:"stretch",background:statusColor,borderRadius:"4px 0 0 4px",transition:"background 200ms"}}/>
 
-        {/* ROL + Descripcion */}
-        <div style={{padding:"18px 20px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,color:"#fff",letterSpacing:"-0.01em"}}>{prop.rol}-{prop.subrol}</span>
-            {hayCambios&&<span style={{padding:"2px 8px",borderRadius:6,fontSize:9,fontWeight:700,letterSpacing:"0.1em",background:"var(--yellow-bg)",color:"var(--yellow)",border:"1px solid var(--yellow-border)"}}>CAMBIO</span>}
-            {resultado&&<span style={{width:8,height:8,borderRadius:4,background:statusColor,display:"inline-block",opacity:0.8}}/>}
+        {/* Propiedad */}
+        <div style={{padding:"16px 18px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,color:"var(--text)"}}>{prop.rol}-{prop.subrol}</span>
+            {hayCambios&&<span style={{padding:"1px 7px",borderRadius:5,fontSize:9,fontWeight:700,letterSpacing:"0.08em",background:"var(--yellow-light)",color:"var(--yellow-text)",border:"1px solid var(--yellow-border)"}}>CAMBIO</span>}
           </div>
-          <div style={{fontSize:12,color:"var(--text3)",marginTop:5,lineHeight:1.3}}>{prop.descripcion||resultado?.direccion||"Sin descripcion"}</div>
+          <div style={{fontSize:12,color:"var(--text3)",marginTop:4,lineHeight:1.3}}>{prop.descripcion||resultado?.direccion||"Sin descripcion"}</div>
         </div>
 
         {/* Comuna */}
-        <div style={{padding:"18px 12px"}}>
-          <div style={{fontSize:13,color:"var(--text2)"}}>{prop.comuna||resultado?.comuna_descripcion||""}</div>
+        <div style={{padding:"16px 10px"}}>
+          <div style={{fontSize:13,color:"var(--text2)",fontWeight:500}}>{prop.comuna||""}</div>
           <div style={{fontSize:11,color:"var(--text4)",marginTop:2}}>{resultado?.destino||""}</div>
         </div>
 
         {/* Encargado */}
-        <div style={{padding:"18px 12px",cursor:"pointer"}} onClick={editEncargado} title="Click para editar">
+        <div style={{padding:"16px 10px",cursor:"pointer"}} onClick={editEncargado}>
           {prop.encargado?(
             <div className="t" style={{fontSize:13,color:"var(--text2)"}}
               onMouseOver={e=>e.currentTarget.style.color="var(--green)"}
               onMouseOut={e=>e.currentTarget.style.color="var(--text2)"}>{prop.encargado}</div>
           ):(
-            <div className="t" style={{fontSize:12,color:"var(--text4)",fontStyle:"italic"}}
-              onMouseOver={e=>{e.currentTarget.style.color="var(--text2)";e.currentTarget.textContent="Asignar"}}
-              onMouseOut={e=>{e.currentTarget.style.color="var(--text4)";e.currentTarget.textContent="--"}}>--</div>
+            <div className="t" style={{fontSize:12,color:"var(--text5)",cursor:"pointer"}}
+              onMouseOver={e=>{e.currentTarget.style.color="var(--text3)";e.currentTarget.textContent="+ Asignar"}}
+              onMouseOut={e=>{e.currentTarget.style.color="var(--text5)";e.currentTarget.textContent="--"}}>--</div>
           )}
         </div>
 
         {/* Propietario */}
-        <div style={{padding:"18px 8px",fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:"var(--text3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={resultado?.propietario}>
-          {resultado?.propietario?.slice(0,20)||"--"}
+        <div style={{padding:"16px 6px",fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:"var(--text4)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={resultado?.propietario}>
+          {resultado?.propietario?.slice(0,18)||"--"}
         </div>
 
-        {/* Deuda + Cuotas */}
-        <div style={{padding:"18px 12px",textAlign:"center"}}>
+        {/* Deuda + cuotas */}
+        <div style={{padding:"16px 12px",textAlign:"center"}}>
           {resultado?(
             <div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontWeight:700,fontSize:16,color:hasDebt?"var(--red)":"var(--green)",letterSpacing:"-0.02em"}}>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontWeight:700,fontSize:15,color:hasDebt?"var(--red)":"var(--green)",letterSpacing:"-0.01em"}}>
                 {hasDebt?fmt(resultado.deuda_total):resultado.exento?"Exento":"Al dia"}
               </div>
-              <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:8}}>
+              <div style={{display:"flex",justifyContent:"center",gap:4,marginTop:6}}>
                 {resultado.cuotas?.slice(0,4).map(c=>(
-                  <div key={c.numero} title={`C${c.numero}: ${EL[c.estado]}`} style={{width:22,height:6,borderRadius:3,background:ECraw[c.estado]||"#222",opacity:0.85,transition:"all 200ms"}}/>
+                  <div key={c.numero} title={`C${c.numero}: ${EL[c.estado]}`} style={{width:20,height:5,borderRadius:3,background:ECraw[c.estado]||"#d1d5db"}}/>
                 ))}
               </div>
             </div>
           ):(
-            <div style={{color:"var(--text4)",fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>--</div>
+            <span style={{color:"var(--text5)",fontSize:12}}>--</span>
           )}
         </div>
 
         {/* Actions */}
-        <div style={{padding:"18px 20px 18px 8px",display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={e=>{e.stopPropagation();onConsultar(prop);}} disabled={loading} className="t"
-            style={{padding:"8px 16px",borderRadius:10,fontSize:11,fontWeight:600,letterSpacing:"0.05em",cursor:loading?"not-allowed":"pointer",border:"1px solid",
-              ...(loading?{background:"transparent",borderColor:"var(--border)",color:"var(--text4)"}:
-                resultado?{background:"transparent",borderColor:"var(--border)",color:"var(--green)"}:
-                {background:"var(--green-bg)",borderColor:"var(--green-border)",color:"var(--green)"})
+        <div style={{padding:"16px 16px 16px 6px",display:"flex",gap:6,alignItems:"center"}} onClick={e=>e.stopPropagation()}>
+          <button onClick={()=>onConsultar(prop)} disabled={loading} className="t"
+            style={{padding:"7px 14px",borderRadius:8,fontSize:11,fontWeight:600,cursor:loading?"not-allowed":"pointer",border:"1px solid",display:"inline-flex",alignItems:"center",gap:5,
+              ...(loading?{background:"var(--bg)",borderColor:"var(--border)",color:"var(--text4)"}:
+                resultado?{background:"var(--bg2)",borderColor:"var(--border)",color:"var(--green)"}:
+                {background:"var(--green-light)",borderColor:"var(--green-border)",color:"var(--green-text)"})
             }}
-            onMouseOver={e=>{if(!loading){e.currentTarget.style.borderColor="var(--green)";e.currentTarget.style.background="var(--green-bg)"}}}
-            onMouseOut={e=>{if(!loading){e.currentTarget.style.borderColor=resultado?"var(--border)":"var(--green-border)";e.currentTarget.style.background=resultado?"transparent":"var(--green-bg)"}}}
+            onMouseOver={e=>{if(!loading){e.currentTarget.style.background="var(--green-light)";e.currentTarget.style.borderColor="var(--green-border)"}}}
+            onMouseOut={e=>{if(!loading){e.currentTarget.style.background=resultado?"var(--bg2)":"var(--green-light)";e.currentTarget.style.borderColor=resultado?"var(--border)":"var(--green-border)"}}}
           >
-            {loading?<span style={{display:"inline-flex",gap:3}}><span style={{animation:"pulse 1s infinite"}}>.</span><span style={{animation:"pulse 1s infinite 0.2s"}}>.</span><span style={{animation:"pulse 1s infinite 0.4s"}}>.</span></span>:resultado?<span style={{display:"inline-flex",alignItems:"center",gap:5}}><IconRefresh/>ACT</span>:"SII"}
+            {loading?<span style={{animation:"pulse 1s infinite"}}>...</span>:resultado?<><IconRefresh/> Act</>:"Consultar"}
           </button>
           {resultado&&(
-            <button onClick={e=>{e.stopPropagation();onVerPagos(prop);}} title="Historial de pagos SII" className="t"
-              style={{padding:"8px 12px",borderRadius:10,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600}}
-              onMouseOver={e=>{e.currentTarget.style.borderColor="var(--green-border)";e.currentTarget.style.color="var(--green)";e.currentTarget.style.background="var(--green-bg)"}}
-              onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)";e.currentTarget.style.background="transparent"}}
-            ><IconDollar/><span>Pagos</span></button>
+            <button onClick={()=>onVerPagos(prop)} title="Historial de pagos SII" className="t"
+              style={{padding:"7px 12px",borderRadius:8,border:"1px solid var(--border)",background:"var(--bg2)",color:"var(--text3)",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:500}}
+              onMouseOver={e=>{e.currentTarget.style.background="var(--blue-light)";e.currentTarget.style.borderColor="var(--blue-border)";e.currentTarget.style.color="var(--blue-text)"}}
+              onMouseOut={e=>{e.currentTarget.style.background="var(--bg2)";e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}
+            ><IconDollar/> Pagos</button>
           )}
-          <button onClick={e=>{e.stopPropagation();onDelete(prop.id);}} title="Eliminar" className="t"
-            style={{width:34,height:34,borderRadius:10,border:"1px solid var(--border)",background:"transparent",color:"var(--text4)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
-            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--red-border)";e.currentTarget.style.color="var(--red)";e.currentTarget.style.background="var(--red-bg)"}}
-            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text4)";e.currentTarget.style.background="transparent"}}
+          <button onClick={()=>onDelete(prop.id)} title="Eliminar" className="t"
+            style={{width:32,height:32,borderRadius:8,border:"1px solid var(--border)",background:"var(--bg2)",color:"var(--text4)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
+            onMouseOver={e=>{e.currentTarget.style.background="var(--red-light)";e.currentTarget.style.borderColor="var(--red-border)";e.currentTarget.style.color="var(--red)"}}
+            onMouseOut={e=>{e.currentTarget.style.background="var(--bg2)";e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text4)"}}
           ><IconTrash/></button>
         </div>
       </div>
 
-      {/* EXPANDED DETAIL */}
+      {/* EXPANDED */}
       {expanded&&resultado&&(
-        <div className="fade-in" style={{borderTop:"1px solid var(--border)",padding:24,background:"var(--bg2)"}}>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
+        <div className="fade-in" style={{borderTop:"1px solid var(--border)",padding:20,background:"var(--bg)"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
             {[
               {l:"Direccion",v:resultado.direccion||"--"},
               {l:"Propietario",v:resultado.propietario||"--"},
               {l:"Destino",v:resultado.destino||"--"},
               {l:"Deuda Total",v:fmt(resultado.deuda_total),hi:resultado.deuda_total>0},
             ].map(({l,v,hi})=>(
-              <div key={l} style={{background:"var(--card)",borderRadius:14,border:`1px solid ${hi?"var(--red-border)":"var(--border)"}`,padding:"16px 18px",
-                ...(hi?{boxShadow:"0 0 15px rgba(239,68,68,0.04)"}:{})}}>
-                <div style={{fontSize:9,color:"var(--text4)",letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:8}}>{l}</div>
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:600,color:hi?"var(--red)":"var(--text2)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={v}>{v}</div>
+              <div key={l} style={{background:"var(--bg2)",borderRadius:10,border:`1px solid ${hi?"var(--red-border)":"var(--border)"}`,padding:"14px 16px",
+                ...(hi?{background:"var(--red-light)"}:{})}}>
+                <div style={{fontSize:9,color:"var(--text4)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:6}}>{l}</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:600,color:hi?"var(--red-text)":"var(--text2)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={v}>{v}</div>
               </div>
             ))}
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
             {resultado.cuotas.map(c=>{
-              const col=ECraw[c.estado]||"#333";
+              const col=ECraw[c.estado];const bg=ECbg[c.estado];
               return(
-                <div key={c.numero} style={{background:"var(--card)",borderRadius:14,border:`1px solid ${col}20`,padding:"18px",position:"relative",overflow:"hidden"}}>
-                  <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:col,opacity:0.5}}/>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,marginTop:4}}>
+                <div key={c.numero} style={{background:"var(--bg2)",borderRadius:10,border:"1px solid var(--border)",padding:16,position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:col,opacity:0.6}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,marginTop:2}}>
                     <div style={{fontSize:11,color:"var(--text3)",fontWeight:500}}>{c.nombre}</div>
                     <Badge estado={c.estado} size="xs"/>
                   </div>
-                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:700,color:"#fff"}}>{fmt(c.total_pago||c.monto)}</div>
-                  {c.monto>0&&c.total_pago!==c.monto&&(
-                    <div style={{fontSize:10,color:"var(--text4)",fontFamily:"'JetBrains Mono',monospace",marginTop:6}}>Base: {fmt(c.monto)}</div>
-                  )}
-                  {c.intereses>0&&<div style={{fontSize:10,color:"#ef444480",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>Intereses: {fmt(c.intereses)}</div>}
-                  {c.reajustes>0&&<div style={{fontSize:10,color:"#eab30880",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>Reajustes: {fmt(c.reajustes)}</div>}
-                  <div style={{fontSize:10,color:"var(--text4)",marginTop:8}}>Vto: {c.vencimiento||"--"}</div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:18,fontWeight:700,color:"var(--text)"}}>{fmt(c.total_pago||c.monto)}</div>
+                  {c.monto>0&&c.total_pago!==c.monto&&<div style={{fontSize:10,color:"var(--text4)",fontFamily:"'JetBrains Mono',monospace",marginTop:4}}>Base: {fmt(c.monto)}</div>}
+                  {c.intereses>0&&<div style={{fontSize:10,color:"var(--red)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>Int: {fmt(c.intereses)}</div>}
+                  {c.reajustes>0&&<div style={{fontSize:10,color:"var(--yellow)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>Reaj: {fmt(c.reajustes)}</div>}
+                  <div style={{fontSize:10,color:"var(--text4)",marginTop:6}}>Vto: {c.vencimiento||"--"}</div>
                 </div>
               );
             })}
           </div>
-          <div style={{marginTop:16,display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--text4)"}}>
+          <div style={{marginTop:14,display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--text4)"}}>
             <span>{resultado.fuente}</span>
             <span>{resultado.ultima_actualizacion?new Date(resultado.ultima_actualizacion).toLocaleString("es-CL"):""}</span>
           </div>
@@ -325,66 +299,53 @@ function AddModal({regiones,comunasPorRegion,onAdd,onClose}){
   const defaultReg=regiones.length>0?regiones.find(r=>r.codigo==="9")?.codigo||regiones[0].codigo:"9";
   const[f,setF]=useState({rol:"",subrol:"0",region:defaultReg,comuna:"",codigo_comuna:"",descripcion:"",encargado:""});
   const comunas=comunasPorRegion[f.region]||[];
+  useEffect(()=>{if(comunas.length>0&&!f.codigo_comuna)setF(p=>({...p,comuna:comunas[0].nombre,codigo_comuna:comunas[0].codigo}));},[f.region,comunas.length]);
 
-  useEffect(()=>{
-    if(comunas.length>0&&!f.codigo_comuna){
-      setF(prev=>({...prev,comuna:comunas[0].nombre,codigo_comuna:comunas[0].codigo}));
-    }
-  },[f.region,comunas.length]);
-
-  const inputStyle={width:"100%",background:"var(--bg2)",border:"1px solid var(--border)",color:"#fff",padding:"12px 16px",borderRadius:12,fontSize:13,fontFamily:"inherit",outline:"none",transition:"border 200ms"};
+  const inp={width:"100%",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",padding:"11px 14px",borderRadius:10,fontSize:13,fontFamily:"inherit",outline:"none",transition:"border 180ms"};
 
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}} onClick={onClose}>
-      <div className="fade-in" style={{background:"var(--card)",border:"1px solid var(--border2)",borderRadius:20,padding:36,width:500,boxShadow:"0 25px 50px rgba(0,0,0,0.5)"}} onClick={e=>e.stopPropagation()}>
-        <div style={{fontSize:20,fontWeight:700,color:"#fff",marginBottom:6}}>Agregar Propiedad</div>
-        <div style={{fontSize:12,color:"var(--text3)",marginBottom:28}}>Ingresa los datos del rol de avaluo</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.25)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}} onClick={onClose}>
+      <div className="fade-in" style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:16,padding:32,width:480,boxShadow:"var(--shadow-lg)"}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>Agregar Propiedad</div>
+        <div style={{fontSize:13,color:"var(--text3)",marginBottom:24}}>Ingresa los datos del rol de avaluo</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
           <div>
-            <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>ROL (Manzana) *</label>
+            <label style={{fontSize:11,color:"var(--text3)",letterSpacing:"0.1em",textTransform:"uppercase",display:"block",marginBottom:6}}>ROL *</label>
             <input type="text" placeholder="ej: 3456" value={f.rol} onChange={e=>setF({...f,rol:e.target.value})}
-              style={{...inputStyle,fontFamily:"'JetBrains Mono',monospace"}} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+              style={{...inp,fontFamily:"'JetBrains Mono',monospace"}} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
           <div>
-            <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Sub-ROL (Predio)</label>
-            <input type="text" placeholder="ej: 0" value={f.subrol} onChange={e=>setF({...f,subrol:e.target.value})}
-              style={{...inputStyle,fontFamily:"'JetBrains Mono',monospace"}} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+            <label style={{fontSize:11,color:"var(--text3)",letterSpacing:"0.1em",textTransform:"uppercase",display:"block",marginBottom:6}}>Sub-ROL</label>
+            <input type="text" placeholder="0" value={f.subrol} onChange={e=>setF({...f,subrol:e.target.value})}
+              style={{...inp,fontFamily:"'JetBrains Mono',monospace"}} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
         </div>
-        <div style={{marginBottom:16}}>
-          <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Region</label>
-          <select value={f.region} onChange={e=>{const r=e.target.value;const cs=comunasPorRegion[r]||[];setF({...f,region:r,comuna:cs[0]?.nombre||"",codigo_comuna:cs[0]?.codigo||""});}}
-            style={inputStyle}>
-            {regiones.map(r=><option key={r.codigo} value={r.codigo}>{r.nombre}</option>)}
-          </select>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:11,color:"var(--text3)",letterSpacing:"0.1em",textTransform:"uppercase",display:"block",marginBottom:6}}>Region</label>
+          <select value={f.region} onChange={e=>{const r=e.target.value;const cs=comunasPorRegion[r]||[];setF({...f,region:r,comuna:cs[0]?.nombre||"",codigo_comuna:cs[0]?.codigo||""});}} style={inp}>{regiones.map(r=><option key={r.codigo} value={r.codigo}>{r.nombre}</option>)}</select>
         </div>
-        <div style={{marginBottom:16}}>
-          <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Comuna</label>
-          <select value={f.codigo_comuna} onChange={e=>{const sel=comunas.find(c=>c.codigo===e.target.value);setF({...f,codigo_comuna:e.target.value,comuna:sel?.nombre||""});}}
-            style={inputStyle}>
-            {comunas.map(c=><option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
-          </select>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:11,color:"var(--text3)",letterSpacing:"0.1em",textTransform:"uppercase",display:"block",marginBottom:6}}>Comuna</label>
+          <select value={f.codigo_comuna} onChange={e=>{const sel=comunas.find(c=>c.codigo===e.target.value);setF({...f,codigo_comuna:e.target.value,comuna:sel?.nombre||""});}} style={inp}>{comunas.map(c=><option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}</select>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:28}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:24}}>
           <div>
-            <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Descripcion</label>
-            <input type="text" placeholder="ej: Casa Norte" value={f.descripcion} onChange={e=>setF({...f,descripcion:e.target.value})}
-              style={inputStyle} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+            <label style={{fontSize:11,color:"var(--text3)",letterSpacing:"0.1em",textTransform:"uppercase",display:"block",marginBottom:6}}>Descripcion</label>
+            <input type="text" placeholder="ej: Casa Norte" value={f.descripcion} onChange={e=>setF({...f,descripcion:e.target.value})} style={inp} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
           <div>
-            <label style={{fontSize:10,color:"var(--text3)",letterSpacing:"0.15em",textTransform:"uppercase",display:"block",marginBottom:8}}>Encargado</label>
-            <input type="text" placeholder="ej: Juan Perez" value={f.encargado} onChange={e=>setF({...f,encargado:e.target.value})}
-              style={inputStyle} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+            <label style={{fontSize:11,color:"var(--text3)",letterSpacing:"0.1em",textTransform:"uppercase",display:"block",marginBottom:6}}>Encargado</label>
+            <input type="text" placeholder="ej: Juan Perez" value={f.encargado} onChange={e=>setF({...f,encargado:e.target.value})} style={inp} onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
         </div>
-        <div style={{display:"flex",gap:12}}>
-          <button onClick={onClose} className="t" style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",fontSize:13,fontWeight:500,cursor:"pointer"}}
-            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--text3)";e.currentTarget.style.color="#fff"}}
-            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}>Cancelar</button>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} className="t" style={{flex:1,padding:12,borderRadius:10,border:"1px solid var(--border)",background:"var(--bg2)",color:"var(--text3)",fontSize:13,fontWeight:500,cursor:"pointer"}}
+            onMouseOver={e=>e.currentTarget.style.background="var(--bg)"}
+            onMouseOut={e=>e.currentTarget.style.background="var(--bg2)"}>Cancelar</button>
           <button onClick={()=>{if(f.rol&&f.codigo_comuna){onAdd({...f,id:Date.now()});onClose();}}} className="t"
-            style={{flex:2,padding:"14px",borderRadius:12,background:"var(--green)",border:"none",color:"#000",fontSize:13,fontWeight:700,cursor:"pointer"}}
-            onMouseOver={e=>e.currentTarget.style.opacity="0.85"}
-            onMouseOut={e=>e.currentTarget.style.opacity="1"}>Agregar Propiedad</button>
+            style={{flex:2,padding:12,borderRadius:10,background:"var(--green)",border:"none",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(22,163,74,0.25)"}}
+            onMouseOver={e=>e.currentTarget.style.opacity="0.9"}
+            onMouseOut={e=>e.currentTarget.style.opacity="1"}>Agregar</button>
         </div>
       </div>
     </div>
@@ -393,39 +354,28 @@ function AddModal({regiones,comunasPorRegion,onAdd,onClose}){
 
 // -- IMPORT MODAL -------------------------------------------------------------
 function ImportModal({onImport,onClose}){
-  const[txt,setTxt]=useState("ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESCRIPCION;ENCARGADO\n13;1;9201;TEMUCO;Local Comercial;Juan Perez\n500;3;9201;TEMUCO;Vivienda Norte;Maria Lopez");
-  const[preview,setPreview]=useState([]);
-  const[err,setErr]=useState("");
-  const parse=raw=>{
-    try{
-      const p=raw.trim().split("\n").slice(1).filter(l=>l.trim()).map((l,i)=>{
-        const ps=l.split(";");
-        if(ps.length<3)throw new Error(`Linea ${i+2}: minimo 3 columnas`)
-        return{id:Date.now()+i,rol:ps[0].trim(),subrol:ps[1].trim()||"0",codigo_comuna:ps[2].trim(),region:"",comuna:ps[3]?.trim()||"",descripcion:ps[4]?.trim()||"",encargado:ps[5]?.trim()||""};
-      });
-      setPreview(p);setErr("");
-    }catch(e){setErr(e.message);setPreview([]);}
-  };
+  const[txt,setTxt]=useState("ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESCRIPCION;ENCARGADO\n13;1;9201;TEMUCO;Local Comercial;Juan Perez");
+  const[preview,setPreview]=useState([]);const[err,setErr]=useState("");
+  const parse=raw=>{try{const p=raw.trim().split("\n").slice(1).filter(l=>l.trim()).map((l,i)=>{const ps=l.split(";");if(ps.length<3)throw new Error(`Linea ${i+2}: minimo 3 cols`);return{id:Date.now()+i,rol:ps[0].trim(),subrol:ps[1].trim()||"0",codigo_comuna:ps[2].trim(),region:"",comuna:ps[3]?.trim()||"",descripcion:ps[4]?.trim()||"",encargado:ps[5]?.trim()||""};});setPreview(p);setErr("");}catch(e){setErr(e.message);setPreview([]);}};
   useEffect(()=>parse(txt),[]);
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}} onClick={onClose}>
-      <div className="fade-in" style={{background:"var(--card)",border:"1px solid var(--border2)",borderRadius:20,padding:36,width:580,boxShadow:"0 25px 50px rgba(0,0,0,0.5)"}} onClick={e=>e.stopPropagation()}>
-        <div style={{fontSize:20,fontWeight:700,color:"#fff",marginBottom:6}}>Importar CSV</div>
-        <div style={{fontSize:12,color:"var(--text3)",marginBottom:20}}>Formato: <code style={{color:"var(--green)",fontFamily:"'JetBrains Mono',monospace",fontSize:11,background:"var(--green-bg)",padding:"2px 8px",borderRadius:6}}>ROL;SUBROL;CODIGO_COMUNA;COMUNA;DESC;ENCARGADO</code></div>
-        <textarea value={txt} onChange={e=>{setTxt(e.target.value);parse(e.target.value);}} rows={7}
-          style={{width:"100%",background:"var(--bg2)",border:"1px solid var(--border)",color:"var(--green)",padding:"16px",borderRadius:14,fontFamily:"'JetBrains Mono',monospace",fontSize:11,resize:"vertical",outline:"none",lineHeight:1.6,transition:"border 200ms"}}
-          onFocus={e=>e.target.style.borderColor="var(--green-border)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
-        {err&&<div style={{color:"var(--red)",fontSize:12,marginTop:10}}>{err}</div>}
-        {preview.length>0&&<div style={{color:"var(--green)",fontSize:13,fontWeight:600,marginTop:12,display:"flex",alignItems:"center",gap:6}}><IconCheck/>{preview.length} propiedades listas para importar</div>}
-        <div style={{display:"flex",gap:12,marginTop:24}}>
-          <button onClick={onClose} className="t" style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",fontSize:13,fontWeight:500,cursor:"pointer"}}
-            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--text3)";e.currentTarget.style.color="#fff"}}
-            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}>Cancelar</button>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.25)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}} onClick={onClose}>
+      <div className="fade-in" style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:16,padding:32,width:560,boxShadow:"var(--shadow-lg)"}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>Importar CSV</div>
+        <div style={{fontSize:13,color:"var(--text3)",marginBottom:18}}>Formato: <code style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,background:"var(--bg)",padding:"3px 8px",borderRadius:5,color:"var(--green)"}}>ROL;SUBROL;COD_COMUNA;COMUNA;DESC;ENCARGADO</code></div>
+        <textarea value={txt} onChange={e=>{setTxt(e.target.value);parse(e.target.value);}} rows={5}
+          style={{width:"100%",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text2)",padding:14,borderRadius:10,fontFamily:"'JetBrains Mono',monospace",fontSize:11,resize:"vertical",outline:"none",lineHeight:1.7,transition:"border 180ms"}}
+          onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+        {err&&<div style={{color:"var(--red)",fontSize:12,marginTop:8}}>{err}</div>}
+        {preview.length>0&&<div style={{color:"var(--green)",fontSize:13,fontWeight:600,marginTop:10,display:"flex",alignItems:"center",gap:6}}><IconCheck/>{preview.length} listas para importar</div>}
+        <div style={{display:"flex",gap:10,marginTop:20}}>
+          <button onClick={onClose} className="t" style={{flex:1,padding:12,borderRadius:10,border:"1px solid var(--border)",background:"var(--bg2)",color:"var(--text3)",fontSize:13,fontWeight:500,cursor:"pointer"}}
+            onMouseOver={e=>e.currentTarget.style.background="var(--bg)"}
+            onMouseOut={e=>e.currentTarget.style.background="var(--bg2)"}>Cancelar</button>
           <button onClick={()=>{if(preview.length>0){onImport(preview);onClose();}}} disabled={preview.length===0} className="t"
-            style={{flex:2,padding:"14px",borderRadius:12,border:"none",fontSize:13,fontWeight:700,cursor:preview.length>0?"pointer":"not-allowed",
-              background:preview.length>0?"var(--green)":"var(--border)",color:preview.length>0?"#000":"var(--text4)"}}
-            onMouseOver={e=>{if(preview.length>0)e.currentTarget.style.opacity="0.85"}}
-            onMouseOut={e=>e.currentTarget.style.opacity="1"}>Importar {preview.length} propiedades</button>
+            style={{flex:2,padding:12,borderRadius:10,border:"none",fontSize:13,fontWeight:700,cursor:preview.length>0?"pointer":"not-allowed",
+              background:preview.length>0?"var(--green)":"var(--border)",color:preview.length>0?"#fff":"var(--text4)",boxShadow:preview.length>0?"0 2px 8px rgba(22,163,74,0.25)":"none"}}>
+            Importar {preview.length}</button>
         </div>
       </div>
     </div>
@@ -457,17 +407,9 @@ function App(){
     fetch(`${API}/health`).then(r=>r.json()).then(()=>{
       setBackendOk(true);
       fetch(`${API}/regiones`).then(r=>r.json()).then(setRegiones).catch(()=>{});
-      fetch(`${API}/comunas`).then(r=>r.json()).then(data=>{
-        const byReg={};
-        data.forEach(c=>{if(!byReg[c.region])byReg[c.region]=[];byReg[c.region].push(c);});
-        setComunasPorRegion(byReg);
-      }).catch(()=>{});
-      fetch(`${API}/propiedades`).then(r=>r.json()).then(savedProps=>{
-        if(savedProps.length>0){
-          const mapped=savedProps.map(p=>({id:p.id,rol:p.rol,subrol:p.subrol,region:p.region_code,
-            comuna:p.comuna,codigo_comuna:p.codigo_comuna,descripcion:p.descripcion,encargado:p.encargado||"",propiedad_id:p.id}));
-          setProps(mapped);
-        }
+      fetch(`${API}/comunas`).then(r=>r.json()).then(data=>{const byReg={};data.forEach(c=>{if(!byReg[c.region])byReg[c.region]=[];byReg[c.region].push(c);});setComunasPorRegion(byReg);}).catch(()=>{});
+      fetch(`${API}/propiedades`).then(r=>r.json()).then(sp=>{
+        if(sp.length>0)setProps(sp.map(p=>({id:p.id,rol:p.rol,subrol:p.subrol,region:p.region_code,comuna:p.comuna,codigo_comuna:p.codigo_comuna,descripcion:p.descripcion,encargado:p.encargado||"",propiedad_id:p.id})));
       }).catch(()=>{});
     }).catch(()=>setBackendOk(false));
   },[]);
@@ -477,42 +419,18 @@ function App(){
     let resultado;
     if(backendOk===true){
       try{
-        const params=new URLSearchParams({
-          rol:prop.rol,subrol:prop.subrol,comuna:prop.comuna||"",
-          codigo_comuna:prop.codigo_comuna||"",region:prop.region||"",
-          descripcion:prop.descripcion||"",encargado:prop.encargado||"",
-          ...(DEMO_MODE?{demo:"true"}:{})
-        });
-        const r=await fetch(`${API}/consultar?${params}`);
-        resultado=await r.json();
-        if(resultado.propiedad_id){
-          setProps(prev=>prev.map(p=>p.id===prop.id?{...p,propiedad_id:resultado.propiedad_id}:p));
-        }
-      }catch(e){resultado={error:"Error de conexion: "+e.message};}
-    }else{
-      resultado={error:"Backend no disponible"};
-    }
-    if(!resultado.error){
-      setResultados(p=>({...p,[prop.id]:resultado}));
-    }
+        const params=new URLSearchParams({rol:prop.rol,subrol:prop.subrol,comuna:prop.comuna||"",codigo_comuna:prop.codigo_comuna||"",region:prop.region||"",descripcion:prop.descripcion||"",encargado:prop.encargado||""});
+        const r=await fetch(`${API}/consultar?${params}`);resultado=await r.json();
+        if(resultado.propiedad_id)setProps(prev=>prev.map(p=>p.id===prop.id?{...p,propiedad_id:resultado.propiedad_id}:p));
+      }catch(e){resultado={error:"Error: "+e.message};}
+    }else resultado={error:"Backend no disponible"};
+    if(!resultado.error)setResultados(p=>({...p,[prop.id]:resultado}));
     setLoadingIds(p=>{const s=new Set(p);s.delete(prop.id);return s;});
   },[backendOk]);
 
-  const consultarTodo=async()=>{
-    setConsultandoTodo(true);
-    for(let i=0;i<props.length;i++){
-      setProgreso({actual:i+1,total:props.length});
-      await consultar(props[i]);
-    }
-    setConsultandoTodo(false);setProgreso(null);
-  };
+  const consultarTodo=async()=>{setConsultandoTodo(true);for(let i=0;i<props.length;i++){setProgreso({actual:i+1,total:props.length});await consultar(props[i]);}setConsultandoTodo(false);setProgreso(null);};
 
-  const updateEncargado=async(propLocalId,nuevoEncargado,propDbId)=>{
-    setProps(prev=>prev.map(p=>p.id===propLocalId?{...p,encargado:nuevoEncargado}:p));
-    if(propDbId&&backendOk){
-      try{await fetch(`${API}/propiedades/${propDbId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({encargado:nuevoEncargado})});}catch(e){}
-    }
-  };
+  const updateEncargado=async(lid,ne,dbid)=>{setProps(p=>p.map(x=>x.id===lid?{...x,encargado:ne}:x));if(dbid&&backendOk){try{await fetch(`${API}/propiedades/${dbid}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({encargado:ne})});}catch(e){}}};
 
   const consultadas=props.filter(p=>resultados[p.id]);
   const conDeuda=consultadas.filter(p=>resultados[p.id]?.deuda_total>0);
@@ -523,158 +441,136 @@ function App(){
     const r=resultados[p.id];
     const mf=filtro==="todos"?true:filtro==="deuda"?r?.deuda_total>0:filtro==="aldia"?(r?.deuda_total===0&&!r?.exento):filtro==="exento"?r?.exento:!r;
     const mb=busqueda===""||p.rol.includes(busqueda)||(p.comuna||"").toLowerCase().includes(busqueda.toLowerCase())||(p.descripcion||"").toLowerCase().includes(busqueda.toLowerCase())||(p.encargado||"").toLowerCase().includes(busqueda.toLowerCase())||(r?.direccion||"").toLowerCase().includes(busqueda.toLowerCase());
-    const mc=filtroComuna===""||p.comuna===filtroComuna;
-    const me=filtroEncargado===""||p.encargado===filtroEncargado;
-    return mf&&mb&&mc&&me;
+    return mf&&mb&&(filtroComuna===""||p.comuna===filtroComuna)&&(filtroEncargado===""||p.encargado===filtroEncargado);
   });
 
   const exportarCSV=()=>{
     const rows=[["ROL","SUBROL","CODIGO_COMUNA","COMUNA","DESCRIPCION","ENCARGADO","DIRECCION","PROPIETARIO","DESTINO","DEUDA_TOTAL","C1","C2","C3","C4","ESTADO"]];
-    props.forEach(p=>{
-      const r=resultados[p.id];
-      const cs=r?.cuotas||[];
-      rows.push([p.rol,p.subrol,p.codigo_comuna||"",p.comuna||"",p.descripcion||"",p.encargado||"",
-        r?.direccion||"",r?.propietario||"",r?.destino||"",r?.deuda_total||"",
-        ...Array.from({length:4},(_,i)=>cs[i]?.estado||""),
-        r?(r.exento?"Exento":r.deuda_total>0?"Con Deuda":"Al Dia"):"Sin Consultar"]);
-    });
+    props.forEach(p=>{const r=resultados[p.id];const cs=r?.cuotas||[];rows.push([p.rol,p.subrol,p.codigo_comuna||"",p.comuna||"",p.descripcion||"",p.encargado||"",r?.direccion||"",r?.propietario||"",r?.destino||"",r?.deuda_total||"",...Array.from({length:4},(_,i)=>cs[i]?.estado||""),r?(r.exento?"Exento":r.deuda_total>0?"Con Deuda":"Al Dia"):"Sin Consultar"]);});
     const blob=new Blob(["\uFEFF"+rows.map(r=>r.join(";")).join("\n")],{type:"text/csv;charset=utf-8;"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
-    a.download=`contribuciones_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`contribuciones_${new Date().toISOString().slice(0,10)}.csv`;a.click();
   };
 
   const pct=progreso?Math.round(progreso.actual/progreso.total*100):0;
-  const filterBtnStyle=(active)=>({
-    padding:"8px 18px",borderRadius:10,fontSize:12,fontWeight:active?600:400,cursor:"pointer",transition:"all 200ms",border:"none",
-    background:active?"var(--green)":"transparent",color:active?"#000":"var(--text3)"
-  });
-  const selectStyle={background:"var(--card)",border:"1px solid var(--border)",color:"var(--text2)",padding:"8px 16px",borderRadius:10,fontSize:12,outline:"none",transition:"border 200ms",cursor:"pointer"};
+
+  const filterBtn=(active)=>({padding:"7px 16px",borderRadius:8,fontSize:12,fontWeight:active?600:400,cursor:"pointer",transition:"all 180ms",border:"none",
+    background:active?"var(--green)":"transparent",color:active?"#fff":"var(--text3)"});
+  const selStyle={background:"var(--bg2)",border:"1px solid var(--border)",color:"var(--text2)",padding:"7px 14px",borderRadius:8,fontSize:12,outline:"none",cursor:"pointer",transition:"border 180ms"};
 
   return(
     <div style={{minHeight:"100vh",background:"var(--bg)"}}>
-      {/* TOP ACCENT LINE */}
-      <div style={{height:2,background:"linear-gradient(90deg, var(--green) 0%, var(--green) 30%, transparent 100%)"}}/>
-
       {/* HEADER */}
-      <div style={{borderBottom:"1px solid var(--border)",padding:"20px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bg2)",position:"sticky",top:0,zIndex:40,backdropFilter:"blur(12px)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{width:48,height:48,borderRadius:14,background:"var(--green-bg)",border:"1px solid var(--green-border)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--green)"}}><IconBuilding/></div>
+      <div style={{background:"var(--bg2)",borderBottom:"1px solid var(--border)",padding:"16px 28px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:40,boxShadow:"var(--shadow-sm)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{width:42,height:42,borderRadius:10,background:"var(--green-light)",border:"1px solid var(--green-border)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--green)"}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16"/><path d="M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1"/></svg>
+          </div>
           <div>
-            <div style={{fontSize:18,fontWeight:700,color:"#fff",letterSpacing:"-0.02em"}}>Contribuciones <span style={{color:"var(--green)"}}>CL</span></div>
-            <div style={{fontSize:11,color:"var(--text4)",letterSpacing:"0.15em",marginTop:3,display:"flex",alignItems:"center",gap:8}}>
-              MONITOR DE BIENES RAICES
-              {backendOk===true&&<><span style={{width:6,height:6,borderRadius:3,background:"var(--green)",display:"inline-block",boxShadow:"0 0 8px rgba(34,197,94,0.5)"}}/>
-                <span style={{color:"var(--green)",letterSpacing:"0.1em"}}>EN LINEA</span></>}
-              {backendOk===false&&<span style={{color:"var(--red)"}}>DESCONECTADO</span>}
+            <div style={{fontSize:17,fontWeight:700,color:"var(--text)"}}>Contribuciones <span style={{color:"var(--green)"}}>CL</span></div>
+            <div style={{fontSize:11,color:"var(--text4)",letterSpacing:"0.08em",marginTop:2,display:"flex",alignItems:"center",gap:8}}>
+              Monitor de Bienes Raices
+              {backendOk===true&&<><span style={{width:6,height:6,borderRadius:3,background:"var(--green)",display:"inline-block"}}/>
+                <span style={{color:"var(--green)",fontWeight:500}}>En linea</span></>}
+              {backendOk===false&&<span style={{color:"var(--red)",fontWeight:500}}>Desconectado</span>}
             </div>
           </div>
         </div>
-        <div style={{display:"flex",gap:10}}>
-          <button onClick={exportarCSV} className="t" style={{padding:"10px 18px",borderRadius:12,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:500}}
-            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.color="#fff"}}
-            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}><IconDownload/> Exportar</button>
-          <button onClick={()=>setShowImport(true)} className="t" style={{padding:"10px 18px",borderRadius:12,border:"1px solid var(--border)",background:"transparent",color:"var(--text3)",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:500}}
-            onMouseOver={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.color="#fff"}}
-            onMouseOut={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text3)"}}><IconUpload/> Importar</button>
-          <button onClick={()=>setShowAdd(true)} className="t" style={{padding:"10px 22px",borderRadius:12,background:"var(--green)",border:"none",color:"#000",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:700}}
-            onMouseOver={e=>e.currentTarget.style.opacity="0.85"}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={exportarCSV} className="t" style={{padding:"9px 16px",borderRadius:8,border:"1px solid var(--border)",background:"var(--bg2)",color:"var(--text3)",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:500}}
+            onMouseOver={e=>{e.currentTarget.style.background="var(--bg)";e.currentTarget.style.color="var(--text)"}}
+            onMouseOut={e=>{e.currentTarget.style.background="var(--bg2)";e.currentTarget.style.color="var(--text3)"}}><IconDownload/> Exportar</button>
+          <button onClick={()=>setShowImport(true)} className="t" style={{padding:"9px 16px",borderRadius:8,border:"1px solid var(--border)",background:"var(--bg2)",color:"var(--text3)",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:500}}
+            onMouseOver={e=>{e.currentTarget.style.background="var(--bg)";e.currentTarget.style.color="var(--text)"}}
+            onMouseOut={e=>{e.currentTarget.style.background="var(--bg2)";e.currentTarget.style.color="var(--text3)"}}><IconUpload/> Importar</button>
+          <button onClick={()=>setShowAdd(true)} className="t" style={{padding:"9px 18px",borderRadius:8,background:"var(--green)",border:"none",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,boxShadow:"0 1px 4px rgba(22,163,74,0.2)"}}
+            onMouseOver={e=>e.currentTarget.style.opacity="0.9"}
             onMouseOut={e=>e.currentTarget.style.opacity="1"}><IconPlus/> Propiedad</button>
         </div>
       </div>
 
-      {/* STAT CARDS */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:0,borderBottom:"1px solid var(--border)"}}>
+      {/* STATS */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:16,padding:"20px 28px"}}>
         {[
-          {l:"PROPIEDADES",v:props.length,color:"#fff",bg:"transparent",icon:null},
-          {l:"CONSULTADAS",v:consultadas.length,color:"var(--blue)",bg:"var(--blue-bg)",icon:null},
-          {l:"AL DIA",v:alDia.length,color:"var(--green)",bg:"var(--green-bg)",icon:null},
-          {l:"CON DEUDA",v:conDeuda.length,color:conDeuda.length>0?"var(--red)":"var(--text4)",bg:conDeuda.length>0?"var(--red-bg)":"transparent",icon:null},
-          {l:"DEUDA TOTAL",v:fmt(deudaTotal),color:deudaTotal>0?"var(--red)":"var(--text4)",bg:deudaTotal>0?"var(--red-bg)":"transparent",icon:null},
-        ].map(({l,v,color,bg},idx)=>(
-          <div key={l} style={{padding:"24px 28px",borderRight:idx<4?"1px solid var(--border)":"none",background:bg}}>
-            <div style={{fontSize:10,color:"var(--text4)",letterSpacing:"0.2em",marginBottom:10}}>{l}</div>
-            <div style={{fontSize:28,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:color,letterSpacing:"-0.03em"}}>{v}</div>
+          {l:"Propiedades",v:props.length,color:"var(--text)",bg:"var(--bg2)",border:"var(--border)"},
+          {l:"Consultadas",v:consultadas.length,color:"var(--blue-text)",bg:"var(--blue-light)",border:"var(--blue-border)"},
+          {l:"Al Dia",v:alDia.length,color:"var(--green-text)",bg:"var(--green-light)",border:"var(--green-border)"},
+          {l:"Con Deuda",v:conDeuda.length,color:conDeuda.length?"var(--red-text)":"var(--text4)",bg:conDeuda.length?"var(--red-light)":"var(--bg2)",border:conDeuda.length?"var(--red-border)":"var(--border)"},
+          {l:"Deuda Total",v:fmt(deudaTotal),color:deudaTotal?"var(--red-text)":"var(--text4)",bg:deudaTotal?"var(--red-light)":"var(--bg2)",border:deudaTotal?"var(--red-border)":"var(--border)"},
+        ].map(({l,v,color,bg,border})=>(
+          <div key={l} style={{padding:"18px 20px",borderRadius:12,background:bg,border:`1px solid ${border}`,boxShadow:"var(--shadow-sm)"}}>
+            <div style={{fontSize:11,color:"var(--text4)",letterSpacing:"0.05em",marginBottom:8,fontWeight:500}}>{l}</div>
+            <div style={{fontSize:24,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color,letterSpacing:"-0.02em"}}>{v}</div>
           </div>
         ))}
       </div>
 
-      {/* PROGRESS BAR */}
+      {/* PROGRESS */}
       {progreso&&(
-        <div style={{padding:"12px 32px",borderBottom:"1px solid var(--border)",background:"var(--card)",display:"flex",alignItems:"center",gap:16}}>
+        <div style={{padding:"0 28px 12px",display:"flex",alignItems:"center",gap:12}}>
           <div style={{flex:1,background:"var(--border)",borderRadius:99,height:6,overflow:"hidden"}}>
-            <div style={{background:"var(--green)",height:"100%",borderRadius:99,transition:"width 300ms",width:`${pct}%`,boxShadow:"0 0 10px rgba(34,197,94,0.3)"}}/>
+            <div style={{background:"var(--green)",height:"100%",borderRadius:99,transition:"width 300ms",width:`${pct}%`,boxShadow:"0 0 8px rgba(22,163,74,0.25)"}}/>
           </div>
-          <span style={{fontSize:12,color:"var(--text3)",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{progreso.actual}/{progreso.total}</span>
+          <span style={{fontSize:12,color:"var(--text3)",fontFamily:"'JetBrains Mono',monospace"}}>{progreso.actual}/{progreso.total}</span>
         </div>
       )}
 
       {/* CONTROLS */}
-      <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 32px",borderBottom:"1px solid var(--border)",flexWrap:"wrap"}}>
-        <div style={{display:"flex",gap:2,background:"var(--card)",borderRadius:12,padding:4,border:"1px solid var(--border)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,padding:"0 28px 16px",flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:2,background:"var(--bg2)",borderRadius:10,padding:3,border:"1px solid var(--border)",boxShadow:"var(--shadow-sm)"}}>
           {[{k:"todos",l:"Todos"},{k:"sin_consultar",l:"Pendientes"},{k:"deuda",l:"Con Deuda"},{k:"aldia",l:"Al Dia"},{k:"exento",l:"Exentos"}].map(({k,l})=>(
-            <button key={k} onClick={()=>setFiltro(k)} style={filterBtnStyle(filtro===k)}
-              onMouseOver={e=>{if(filtro!==k)e.currentTarget.style.color="var(--text2)"}}
-              onMouseOut={e=>{if(filtro!==k)e.currentTarget.style.color="var(--text3)"}}>{l}</button>
+            <button key={k} onClick={()=>setFiltro(k)} style={filterBtn(filtro===k)}
+              onMouseOver={e=>{if(filtro!==k)e.currentTarget.style.background="var(--bg)"}}
+              onMouseOut={e=>{if(filtro!==k)e.currentTarget.style.background="transparent"}}>{l}</button>
           ))}
         </div>
-        {comunasUnicas.length>1&&(
-          <select value={filtroComuna} onChange={e=>setFiltroComuna(e.target.value)} style={selectStyle}
-            onFocus={e=>e.target.style.borderColor="var(--green-border)"} onBlur={e=>e.target.style.borderColor="var(--border)"}>
-            <option value="">Todas las comunas</option>
-            {comunasUnicas.map(c=><option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
-        {encargadosUnicos.length>1&&(
-          <select value={filtroEncargado} onChange={e=>setFiltroEncargado(e.target.value)} style={selectStyle}
-            onFocus={e=>e.target.style.borderColor="var(--green-border)"} onBlur={e=>e.target.style.borderColor="var(--border)"}>
-            <option value="">Todos los encargados</option>
-            {encargadosUnicos.map(c=><option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
+        {comunasUnicas.length>1&&<select value={filtroComuna} onChange={e=>setFiltroComuna(e.target.value)} style={selStyle}
+          onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}>
+          <option value="">Todas las comunas</option>{comunasUnicas.map(c=><option key={c} value={c}>{c}</option>)}</select>}
+        {encargadosUnicos.length>1&&<select value={filtroEncargado} onChange={e=>setFiltroEncargado(e.target.value)} style={selStyle}
+          onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}>
+          <option value="">Todos los encargados</option>{encargadosUnicos.map(c=><option key={c} value={c}>{c}</option>)}</select>}
         <div style={{flex:1,minWidth:180,position:"relative"}}>
-          <div style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:"var(--text4)"}}><IconSearch/></div>
+          <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"var(--text4)"}}><IconSearch/></div>
           <input type="text" placeholder="Buscar ROL, comuna, encargado..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}
-            style={{width:"100%",background:"var(--card)",border:"1px solid var(--border)",color:"var(--text2)",padding:"8px 16px 8px 38px",borderRadius:10,fontSize:12,outline:"none",transition:"border 200ms"}}
-            onFocus={e=>e.target.style.borderColor="var(--green-border)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+            style={{width:"100%",background:"var(--bg2)",border:"1px solid var(--border)",color:"var(--text)",padding:"7px 14px 7px 36px",borderRadius:8,fontSize:12,outline:"none",transition:"border 180ms"}}
+            onFocus={e=>e.target.style.borderColor="var(--green)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
         </div>
-        <button onClick={consultarTodo} disabled={consultandoTodo||props.length===0} className="t"
-          style={{padding:"10px 24px",borderRadius:12,fontSize:12,fontWeight:700,cursor:consultandoTodo?"not-allowed":"pointer",border:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8,
-            background:consultandoTodo?"var(--card)":"var(--green)",color:consultandoTodo?"var(--text4)":"#000"}}
-          {...(consultandoTodo?{style:{...{padding:"10px 24px",borderRadius:12,fontSize:12,fontWeight:700,cursor:"not-allowed",border:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8,background:"var(--card)",color:"var(--text4)"},animation:"pulse 1.5s infinite"}}:{})}>
-          <IconRefresh/>
-          {consultandoTodo?`${progreso?.actual||0}/${progreso?.total||0}`:`Consultar Todo (${props.length})`}
+        <button onClick={consultarTodo} disabled={consultandoTodo||!props.length} className="t"
+          style={{padding:"9px 20px",borderRadius:8,fontSize:12,fontWeight:600,cursor:consultandoTodo?"not-allowed":"pointer",border:"none",whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",gap:6,
+            background:consultandoTodo?"var(--border)":"var(--green)",color:consultandoTodo?"var(--text4)":"#fff",boxShadow:consultandoTodo?"none":"0 1px 4px rgba(22,163,74,0.2)",
+            ...(consultandoTodo?{animation:"pulse 1.5s infinite"}:{})}}>
+          <IconRefresh/>{consultandoTodo?`${progreso?.actual||0}/${progreso?.total||0}`:`Consultar Todo (${props.length})`}
         </button>
       </div>
 
       {/* TABLE HEADER */}
-      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1.1fr 0.9fr 0.8fr 1fr auto",padding:"12px 28px 12px 48px",borderBottom:"1px solid var(--border)",background:"var(--bg)"}}>
-        {["","Propiedad","Comuna","Encargado","Propietario","Deuda / Estado",""].map((h,i)=>(
-          <div key={i} style={{fontSize:10,color:"var(--text4)",letterSpacing:"0.18em",textTransform:"uppercase",fontWeight:500,
-            textAlign:i===5?"center":i===6?"right":"left"}}>{h}</div>
-        ))}
+      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1fr 0.9fr 0.7fr 1.1fr auto",padding:"10px 28px 10px 52px",fontSize:10,color:"var(--text4)",letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>
+        <div></div><div>Propiedad</div><div>Comuna</div><div>Encargado</div><div>Propietario</div><div style={{textAlign:"center"}}>Deuda / Estado</div><div></div>
       </div>
 
       {/* LIST */}
-      <div style={{padding:"12px 0 40px"}}>
+      <div style={{padding:"0 28px 40px"}}>
         {pf.length===0?(
-          <div style={{padding:"80px 0",textAlign:"center"}}>
-            <div style={{width:64,height:64,borderRadius:20,background:"var(--card)",border:"1px solid var(--border)",display:"inline-flex",alignItems:"center",justifyContent:"center",color:"var(--text4)",marginBottom:20}}><IconBuilding/></div>
-            <div style={{fontSize:14,color:"var(--text3)",fontWeight:500}}>{props.length===0?"Agrega propiedades para comenzar":"Sin resultados para los filtros seleccionados"}</div>
-            <div style={{fontSize:12,color:"var(--text4)",marginTop:8}}>{props.length===0?'Usa el boton "+ Propiedad" o "Importar"':"Intenta cambiar los filtros"}</div>
+          <div style={{padding:"60px 0",textAlign:"center"}}>
+            <div style={{width:56,height:56,borderRadius:14,background:"var(--bg2)",border:"1px solid var(--border)",display:"inline-flex",alignItems:"center",justifyContent:"center",color:"var(--text4)",marginBottom:16}}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16"/><path d="M9 8h1M9 12h1M14 8h1M14 12h1"/></svg>
+            </div>
+            <div style={{fontSize:14,color:"var(--text2)",fontWeight:500}}>{props.length===0?"Agrega propiedades para comenzar":"Sin resultados para los filtros"}</div>
+            <div style={{fontSize:12,color:"var(--text4)",marginTop:6}}>{props.length===0?'Usa "+ Propiedad" o "Importar"':"Cambia los filtros de busqueda"}</div>
           </div>
         ):pf.map(prop=>(
           <PropertyRow key={prop.id} prop={prop} onConsultar={consultar}
             loading={loadingIds.has(prop.id)} resultado={resultados[prop.id]}
-            onDelete={id=>{if(!confirm("Eliminar esta propiedad?"))return;const p=props.find(x=>x.id===id);if(p?.propiedad_id&&backendOk){fetch(`${API}/propiedades/${p.propiedad_id}`,{method:"DELETE"}).catch(()=>{});}setProps(pr=>pr.filter(x=>x.id!==id));setResultados(r=>{const n={...r};delete n[id];return n;});}}
+            onDelete={id=>{if(!confirm("Eliminar esta propiedad?"))return;const p=props.find(x=>x.id===id);if(p?.propiedad_id&&backendOk)fetch(`${API}/propiedades/${p.propiedad_id}`,{method:"DELETE"}).catch(()=>{});setProps(pr=>pr.filter(x=>x.id!==id));setResultados(r=>{const n={...r};delete n[id];return n;});}}
             onVerPagos={p=>setPagosProp(p)}
             onUpdateEncargado={updateEncargado}/>
         ))}
       </div>
 
       {/* FOOTER */}
-      <div style={{borderTop:"1px solid var(--border)",padding:"16px 32px",display:"flex",justifyContent:"space-between",background:"var(--bg)"}}>
+      <div style={{borderTop:"1px solid var(--border)",padding:"14px 28px",display:"flex",justifyContent:"space-between",background:"var(--bg2)"}}>
         <div style={{fontSize:11,color:"var(--text4)"}}>Contribuciones CL &middot; {backendOk?"Conectado":"Desconectado"}</div>
-        <div style={{fontSize:11,color:"var(--text4)",fontFamily:"'JetBrains Mono',monospace"}}>{pf.length} de {props.length} propiedades</div>
+        <div style={{fontSize:11,color:"var(--text4)",fontFamily:"'JetBrains Mono',monospace"}}>{pf.length} de {props.length}</div>
       </div>
 
       {showAdd&&<AddModal regiones={regiones} comunasPorRegion={comunasPorRegion} onAdd={p=>setProps(prev=>[...prev,p])} onClose={()=>setShowAdd(false)}/>}
