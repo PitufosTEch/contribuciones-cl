@@ -6,7 +6,9 @@ from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from datetime import datetime
 from pathlib import Path
+from io import BytesIO
 import os
+import base64
 import requests as http_requests
 import json
 import uuid
@@ -14,11 +16,15 @@ import uuid
 from db_manager import (
     init_db, upsert_propiedad, get_todas_propiedades,
     get_propiedad, eliminar_propiedad, update_propiedad,
-    guardar_consulta, get_historial, get_resumen_global
+    guardar_consulta, get_historial, get_resumen_global,
+    crear_comprobante, crear_pagos_registrados, get_comprobante,
+    get_comprobante_meta, get_pagos_by_propiedad, get_pagos_by_comprobante,
+    get_todos_comprobantes, eliminar_comprobante
 )
 
 app = Flask(__name__)
 CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max upload
 
 # ── Cargar comunas SII ───────────────────────────────────────────────────────
 COMUNAS_JSON = Path(__file__).parent / "sii_comunas.json"
@@ -400,6 +406,87 @@ def reset_session():
     return jsonify({"status": "ok", "conv_id": sii_client.conv_id})
 
 
+# ── Comprobantes ──────────────────────────────────────────────────────────────
+
+@app.route("/comprobantes", methods=["POST"])
+def subir_comprobante():
+    archivo = request.files.get("archivo")
+    if not archivo:
+        return jsonify({"error": "Archivo requerido"}), 400
+
+    allowed = {"application/pdf", "image/jpeg", "image/png"}
+    mime = archivo.content_type
+    if mime not in allowed:
+        return jsonify({"error": f"Tipo no permitido: {mime}. Usar PDF, JPG o PNG"}), 400
+
+    file_bytes = archivo.read()
+    archivo_size = len(file_bytes)
+    archivo_base64 = base64.b64encode(file_bytes).decode("ascii")
+
+    fecha_pago = request.form.get("fecha_pago", "")
+    monto_total = int(request.form.get("monto_total", 0))
+    metodo_pago = request.form.get("metodo_pago", "")
+    nota = request.form.get("nota", "")
+    pagos_json = request.form.get("pagos", "[]")
+
+    if not fecha_pago:
+        return jsonify({"error": "fecha_pago requerido"}), 400
+
+    try:
+        pagos_list = json.loads(pagos_json)
+    except Exception:
+        return jsonify({"error": "pagos debe ser JSON valido"}), 400
+
+    comp_id = crear_comprobante(
+        archivo.filename or "comprobante", mime, archivo_base64, archivo_size,
+        fecha_pago, monto_total, metodo_pago, nota
+    )
+
+    if pagos_list:
+        crear_pagos_registrados(comp_id, pagos_list)
+
+    return jsonify({"id": comp_id, "status": "ok"})
+
+
+@app.route("/comprobantes/<int:comp_id>/archivo")
+def descargar_comprobante(comp_id):
+    comp = get_comprobante(comp_id)
+    if not comp:
+        return jsonify({"error": "No encontrado"}), 404
+    file_bytes = base64.b64decode(comp["archivo_base64"])
+    return send_file(
+        BytesIO(file_bytes),
+        mimetype=comp["archivo_tipo"],
+        as_attachment=request.args.get("download") == "true",
+        download_name=comp["archivo_nombre"]
+    )
+
+
+@app.route("/comprobantes")
+def listar_comprobantes():
+    return jsonify(get_todos_comprobantes())
+
+
+@app.route("/comprobantes/<int:comp_id>")
+def detalle_comprobante(comp_id):
+    meta = get_comprobante_meta(comp_id)
+    if not meta:
+        return jsonify({"error": "No encontrado"}), 404
+    meta["pagos"] = get_pagos_by_comprobante(comp_id)
+    return jsonify(meta)
+
+
+@app.route("/propiedades/<int:prop_id>/pagos-registrados")
+def pagos_registrados_propiedad(prop_id):
+    return jsonify(get_pagos_by_propiedad(prop_id))
+
+
+@app.route("/comprobantes/<int:comp_id>", methods=["DELETE"])
+def borrar_comprobante(comp_id):
+    eliminar_comprobante(comp_id)
+    return jsonify({"status": "ok"})
+
+
 def seed_propiedades():
     """Carga propiedades desde propiedades_monitor.json si la DB esta vacia."""
     CONFIG_FILE = Path(__file__).parent / "propiedades_monitor.json"
@@ -444,13 +531,13 @@ if __name__ == "__main__":
     print("  GET  /propiedades")
     print("  POST /propiedades")
     print("  GET  /consultar?rol=X&subrol=0&codigo_comuna=9201")
-    print("  GET  /consultar?...&demo=true  (sin SII)")
     print("  GET  /historial/:id")
     print("  GET  /pagos-sii?codigo_comuna=9201&rol=13&subrol=1")
     print("  GET  /resumen")
-    print("  GET  /regiones")
-    print("  GET  /comunas?region=9")
-    print("  POST /reset-session")
+    print("  POST /comprobantes              (upload)")
+    print("  GET  /comprobantes/:id/archivo  (download)")
+    print("  GET  /comprobantes              (listar)")
+    print("  GET  /propiedades/:id/pagos-registrados")
     print("=" * 55)
     print()
     port = int(os.environ.get("PORT", 5000))

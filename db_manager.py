@@ -112,6 +112,41 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_consultas_prop
                 ON consultas(propiedad_id, fecha_consulta DESC)
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS comprobantes (
+                id              SERIAL PRIMARY KEY,
+                archivo_nombre  TEXT    NOT NULL,
+                archivo_tipo    TEXT    NOT NULL,
+                archivo_base64  TEXT    NOT NULL,
+                archivo_size    INTEGER NOT NULL DEFAULT 0,
+                fecha_pago      DATE    NOT NULL,
+                monto_total     INTEGER NOT NULL DEFAULT 0,
+                metodo_pago     TEXT    NOT NULL DEFAULT '',
+                nota            TEXT    DEFAULT '',
+                created_at      TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS pagos_registrados (
+                id                  SERIAL PRIMARY KEY,
+                comprobante_id      INTEGER NOT NULL REFERENCES comprobantes(id) ON DELETE CASCADE,
+                propiedad_id        INTEGER NOT NULL REFERENCES propiedades(id),
+                cuota_numero        INTEGER NOT NULL,
+                cuota_agno          INTEGER NOT NULL,
+                monto_asignado      INTEGER NOT NULL DEFAULT 0,
+                confirmado_sii      INTEGER DEFAULT 0,
+                fecha_confirmacion  TEXT    DEFAULT NULL,
+                created_at          TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pagos_comp
+                ON pagos_registrados(comprobante_id)
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pagos_prop
+                ON pagos_registrados(propiedad_id, cuota_agno, cuota_numero)
+        """)
         conn.commit()
     else:
         conn.executescript("""
@@ -145,6 +180,33 @@ def init_db():
             );
             CREATE INDEX IF NOT EXISTS idx_consultas_prop
                 ON consultas(propiedad_id, fecha_consulta DESC);
+            CREATE TABLE IF NOT EXISTS comprobantes (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                archivo_nombre  TEXT    NOT NULL,
+                archivo_tipo    TEXT    NOT NULL,
+                archivo_base64  TEXT    NOT NULL,
+                archivo_size    INTEGER NOT NULL DEFAULT 0,
+                fecha_pago      TEXT    NOT NULL,
+                monto_total     INTEGER NOT NULL DEFAULT 0,
+                metodo_pago     TEXT    NOT NULL DEFAULT '',
+                nota            TEXT    DEFAULT '',
+                created_at      TEXT    DEFAULT (datetime('now','localtime'))
+            );
+            CREATE TABLE IF NOT EXISTS pagos_registrados (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                comprobante_id      INTEGER NOT NULL REFERENCES comprobantes(id) ON DELETE CASCADE,
+                propiedad_id        INTEGER NOT NULL REFERENCES propiedades(id),
+                cuota_numero        INTEGER NOT NULL,
+                cuota_agno          INTEGER NOT NULL,
+                monto_asignado      INTEGER NOT NULL DEFAULT 0,
+                confirmado_sii      INTEGER DEFAULT 0,
+                fecha_confirmacion  TEXT    DEFAULT NULL,
+                created_at          TEXT    DEFAULT (datetime('now','localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_pagos_comp
+                ON pagos_registrados(comprobante_id);
+            CREATE INDEX IF NOT EXISTS idx_pagos_prop
+                ON pagos_registrados(propiedad_id, cuota_agno, cuota_numero);
         """)
         conn.commit()
         # Migracion SQLite: agregar encargado si no existe
@@ -269,6 +331,9 @@ def guardar_consulta(propiedad_id, datos: dict) -> dict:
                     "fecha": datetime.now().isoformat(),
                     "monto": cuota.get("monto", 0),
                 })
+                if estado_nuevo == "pagada":
+                    agno = datetime.now().year
+                    marcar_confirmado_sii(propiedad_id, n, agno)
         deuda_ant = ultima["deuda_total"] or 0
         deuda_nueva = datos.get("deuda_total", 0)
         if deuda_nueva < deuda_ant and deuda_ant > 0:
@@ -353,6 +418,130 @@ def get_resumen_global():
         "sin_consultar": sin_consultar,
         "deuda_total_clp": deuda_total,
     }
+
+
+# -- COMPROBANTES --------------------------------------------------------------
+
+def crear_comprobante(archivo_nombre, archivo_tipo, archivo_base64, archivo_size,
+                      fecha_pago, monto_total, metodo_pago, nota=""):
+    conn = get_conn()
+    if _PG:
+        r = _fetchone(conn,
+            """INSERT INTO comprobantes(archivo_nombre,archivo_tipo,archivo_base64,archivo_size,
+               fecha_pago,monto_total,metodo_pago,nota) VALUES(?,?,?,?,?,?,?,?) RETURNING id""",
+            (archivo_nombre, archivo_tipo, archivo_base64, archivo_size,
+             fecha_pago, monto_total, metodo_pago, nota))
+        comp_id = r["id"]
+    else:
+        cur = _execute(conn,
+            """INSERT INTO comprobantes(archivo_nombre,archivo_tipo,archivo_base64,archivo_size,
+               fecha_pago,monto_total,metodo_pago,nota) VALUES(?,?,?,?,?,?,?,?)""",
+            (archivo_nombre, archivo_tipo, archivo_base64, archivo_size,
+             fecha_pago, monto_total, metodo_pago, nota))
+        comp_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return comp_id
+
+
+def crear_pagos_registrados(comprobante_id, pagos_list):
+    conn = get_conn()
+    ids = []
+    for pago in pagos_list:
+        if _PG:
+            r = _fetchone(conn,
+                """INSERT INTO pagos_registrados(comprobante_id,propiedad_id,cuota_numero,cuota_agno,monto_asignado)
+                   VALUES(?,?,?,?,?) RETURNING id""",
+                (comprobante_id, pago["propiedad_id"], pago["cuota_numero"],
+                 pago["cuota_agno"], pago["monto_asignado"]))
+            ids.append(r["id"])
+        else:
+            cur = _execute(conn,
+                """INSERT INTO pagos_registrados(comprobante_id,propiedad_id,cuota_numero,cuota_agno,monto_asignado)
+                   VALUES(?,?,?,?,?)""",
+                (comprobante_id, pago["propiedad_id"], pago["cuota_numero"],
+                 pago["cuota_agno"], pago["monto_asignado"]))
+            ids.append(cur.lastrowid)
+    conn.commit()
+    conn.close()
+    return ids
+
+
+def get_comprobante(comp_id):
+    conn = get_conn()
+    row = _fetchone(conn, "SELECT * FROM comprobantes WHERE id=?", (comp_id,))
+    conn.close()
+    return row
+
+
+def get_comprobante_meta(comp_id):
+    conn = get_conn()
+    row = _fetchone(conn,
+        "SELECT id,archivo_nombre,archivo_tipo,archivo_size,fecha_pago,monto_total,metodo_pago,nota,created_at FROM comprobantes WHERE id=?",
+        (comp_id,))
+    conn.close()
+    return row
+
+
+def get_pagos_by_propiedad(propiedad_id):
+    conn = get_conn()
+    rows = _fetchall(conn, """
+        SELECT pr.id, pr.comprobante_id, pr.cuota_numero, pr.cuota_agno,
+               pr.monto_asignado, pr.confirmado_sii, pr.fecha_confirmacion,
+               c.archivo_nombre, c.archivo_tipo, c.archivo_size,
+               c.fecha_pago, c.monto_total, c.metodo_pago, c.nota
+        FROM pagos_registrados pr
+        JOIN comprobantes c ON c.id = pr.comprobante_id
+        WHERE pr.propiedad_id = ?
+        ORDER BY c.fecha_pago DESC
+    """, (propiedad_id,))
+    conn.close()
+    return rows
+
+
+def get_pagos_by_comprobante(comp_id):
+    conn = get_conn()
+    rows = _fetchall(conn, """
+        SELECT pr.*, p.rol, p.subrol, p.comuna, p.descripcion
+        FROM pagos_registrados pr
+        JOIN propiedades p ON p.id = pr.propiedad_id
+        WHERE pr.comprobante_id = ?
+        ORDER BY p.rol, pr.cuota_numero
+    """, (comp_id,))
+    conn.close()
+    return rows
+
+
+def get_todos_comprobantes():
+    conn = get_conn()
+    rows = _fetchall(conn, """
+        SELECT c.id, c.archivo_nombre, c.archivo_tipo, c.archivo_size,
+               c.fecha_pago, c.monto_total, c.metodo_pago, c.nota, c.created_at,
+               COUNT(pr.id) as pagos_count
+        FROM comprobantes c
+        LEFT JOIN pagos_registrados pr ON pr.comprobante_id = c.id
+        GROUP BY c.id
+        ORDER BY c.fecha_pago DESC
+    """)
+    conn.close()
+    return rows
+
+
+def eliminar_comprobante(comp_id):
+    conn = get_conn()
+    _execute(conn, "DELETE FROM comprobantes WHERE id=?", (comp_id,))
+    conn.commit()
+    conn.close()
+
+
+def marcar_confirmado_sii(propiedad_id, cuota_numero, cuota_agno):
+    conn = get_conn()
+    _execute(conn, """
+        UPDATE pagos_registrados SET confirmado_sii=1, fecha_confirmacion=?
+        WHERE propiedad_id=? AND cuota_numero=? AND cuota_agno=? AND confirmado_sii=0
+    """, (datetime.now().isoformat(), propiedad_id, cuota_numero, cuota_agno))
+    conn.commit()
+    conn.close()
 
 
 if __name__ == "__main__":
