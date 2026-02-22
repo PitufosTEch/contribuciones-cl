@@ -6,20 +6,6 @@
   },
   "propiedades": [
     {
-      "rol": "13",
-      "subrol": "1",
-      "codigo_comuna": "9201",
-      "descripcion": "Local Comercial",
-      "encargado": ""
-    },
-    {
-      "rol": "1",
-      "subrol": "1",
-      "codigo_comuna": "9201",
-      "descripcion": "Vivienda Balmaceda",
-      "encargado": ""
-    },
-    {
       "rol": "85",
       "subrol": "1",
       "codigo_comuna": "9201",
