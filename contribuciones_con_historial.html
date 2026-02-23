@@ -231,7 +231,7 @@ function PropertyRow({prop,onConsultar,loading,resultado,onDelete,onVerPagos,onU
     <div className="fade-in" style={{background:"var(--card)",borderRadius:12,border:"1px solid var(--border)",marginBottom:8,overflow:"hidden",boxShadow:"var(--shadow-sm)",transition:"box-shadow 200ms"}}
       onMouseOver={e=>e.currentTarget.style.boxShadow="var(--shadow)"}
       onMouseOut={e=>e.currentTarget.style.boxShadow="var(--shadow-sm)"}>
-      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1fr 0.9fr 0.7fr 1.1fr auto",alignItems:"center",cursor:resultado?"pointer":"default",transition:"background 150ms"}}
+      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1fr 0.9fr 0.7fr 1.1fr 180px",alignItems:"center",cursor:resultado?"pointer":"default",transition:"background 150ms"}}
         onClick={()=>resultado&&setExpanded(!expanded)}
         onMouseOver={e=>e.currentTarget.style.background="var(--card-hover)"}
         onMouseOut={e=>e.currentTarget.style.background="transparent"}>
@@ -827,8 +827,8 @@ function App(){
       </div>
 
       {/* TABLE HEADER */}
-      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1fr 0.9fr 0.7fr 1.1fr auto",padding:"10px 28px 10px 52px",fontSize:10,color:"var(--text4)",letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>
-        <div></div><div>Propiedad</div><div>Comuna</div><div>Encargado</div><div>Propietario</div><div style={{textAlign:"center"}}>Deuda / Estado</div><div></div>
+      <div style={{display:"grid",gridTemplateColumns:"4px 2fr 1fr 0.9fr 0.7fr 1.1fr 180px",padding:"10px 29px",fontSize:10,color:"var(--text4)",letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:600}}>
+        <div></div><div style={{paddingLeft:18}}>Propiedad</div><div>Comuna</div><div>Encargado</div><div>Propietario</div><div style={{textAlign:"center"}}>Deuda / Estado</div><div></div>
       </div>
 
       {/* LIST */}
